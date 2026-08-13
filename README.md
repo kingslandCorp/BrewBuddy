@@ -74,10 +74,12 @@ response shape lives in `docs/api-design.md`.
   Cloudflare Cron Trigger (`[triggers]` in `wrangler.toml`, handler in
   `lib/scheduler.ts`) checks every org on an automatic cadence and runs a
   new round for whichever ones are due.
-- **Sending the invite email** — `POST /v1/groups/:id/invite` generates a
-  correct `.ics` file and returns it, but doesn't email it yet. Drop in a
-  transactional email provider (Postmark, Resend, SES) where the route
-  comment says so.
+- **Sending the invite email** — `POST /v1/groups/:id/invite` generates the
+  `.ics`, emails it to every participant via Resend (`lib/email.ts`), and
+  returns the `.ics` regardless of delivery outcome. Requires a
+  `RESEND_API_KEY` secret (`wrangler secret put RESEND_API_KEY`) and a
+  verified sending domain in Resend; the response's `X-Email-Status` header
+  reports per-participant send results.
 
 ## Pushing this to GitHub
 

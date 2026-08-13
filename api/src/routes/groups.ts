@@ -1,6 +1,19 @@
 import { json, errorResponse } from '../lib/db';
 import { generateIcs } from '../lib/ics';
+import { sendInviteEmail } from '../lib/email';
 import type { Env } from './organizations';
+
+interface GroupRow {
+  id: string;
+  round_id: string;
+  meeting_time: string;
+  duration_minutes: number;
+  group_size_reason: string;
+  ics_generated: number;
+  status: string;
+  org_name: string;
+  plan_tier: string;
+}
 
 async function loadGroupWithParticipants(groupId: string, env: Env) {
   const group = await env.DB.prepare(
@@ -9,7 +22,7 @@ async function loadGroupWithParticipants(groupId: string, env: Env) {
      WHERE g.id = ?`
   )
     .bind(groupId)
-    .first();
+    .first<GroupRow>();
   if (!group) return null;
 
   const { results: participants } = await env.DB.prepare(
@@ -40,10 +53,11 @@ export async function getGroup(groupId: string, env: Env): Promise<Response> {
 }
 
 /**
- * Freemium+ — generate the .ics invite for a group and (in production)
- * email it to every participant. Sending is stubbed here — swap in a
- * transactional email provider (Postmark, SES, Resend) to actually deliver
- * it; the .ics content itself is fully generated and returned as-is.
+ * Freemium+ — generate the .ics invite for a group and email it to every
+ * participant via Resend (if RESEND_API_KEY is configured; falls back to
+ * generate-only if not, so this endpoint still works pre-setup). Email
+ * failures are logged but don't fail the request — the .ics is always
+ * returned regardless of delivery outcome.
  */
 export async function generateInvite(groupId: string, env: Env): Promise<Response> {
   const data = await loadGroupWithParticipants(groupId, env);
@@ -53,15 +67,42 @@ export async function generateInvite(groupId: string, env: Env): Promise<Respons
     return errorResponse('Calendar invites require the Plus plan or higher.', 402);
   }
 
+  const meetingTimeUtc = new Date(data.group.meeting_time);
+  const participants = data.participants as { id: string; name: string; email: string }[];
+
   const ics = generateIcs({
     groupId: data.group.id,
     orgName: data.group.org_name,
-    meetingTimeUtc: new Date(data.group.meeting_time),
+    meetingTimeUtc,
     durationMinutes: data.group.duration_minutes,
-    participants: data.participants as any,
+    participants,
   });
 
   await env.DB.prepare(`UPDATE groups SET ics_generated = 1 WHERE id = ?`).bind(groupId).run();
+
+  let emailStatus = 'not_configured';
+  if (env.RESEND_API_KEY) {
+    const results = await Promise.all(
+      participants.map(async (p) => {
+        const otherNames = participants
+          .filter((x) => x.id !== p.id)
+          .map((x) => x.name)
+          .join(', ') || 'your table';
+        const result = await sendInviteEmail(
+          env.RESEND_API_KEY!,
+          p.email,
+          p.name,
+          data.group.org_name,
+          otherNames,
+          meetingTimeUtc,
+          ics
+        ).catch((err) => ({ ok: false, error: String(err) }));
+        if (!result.ok) console.error(`[invite-email] failed for ${p.email}: ${result.error}`);
+        return `${p.email}:${result.ok ? 'sent' : 'failed(' + (result as any).error + ')'}`;
+      })
+    );
+    emailStatus = results.join(',');
+  }
 
   return new Response(ics, {
     status: 200,
@@ -69,6 +110,7 @@ export async function generateInvite(groupId: string, env: Env): Promise<Respons
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `attachment; filename="brew-buddies-${groupId}.ics"`,
       'Access-Control-Allow-Origin': '*',
+      'X-Email-Status': emailStatus,
     },
   });
 }
