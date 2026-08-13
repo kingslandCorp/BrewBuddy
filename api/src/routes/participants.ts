@@ -1,4 +1,5 @@
 import { newId, json, errorResponse } from '../lib/db';
+import { parseXlsxRows, parseDocxRows } from '../lib/fileImport';
 import type { Env } from './organizations';
 
 const FREE_TIER_PARTICIPANT_CAP = 12;
@@ -44,12 +45,10 @@ export async function listParticipants(orgId: string, env: Env): Promise<Respons
 /**
  * Freemium+ — bulk import a roster.
  *
- * This endpoint accepts plain CSV text in the request body (name,email per
- * row) as a fully-working baseline. Parsing real .xlsx and .docx uploads
- * needs a dedicated library (SheetJS for Excel, mammoth for Word) — those
- * aren't included here to keep the Worker dependency-free, but the shape
- * to extend is: parse the upload into the same [{name, email}] array this
- * function expects, then feed it into `importRows` below.
+ * Accepts, by Content-Type: application/json ({rows:[{name,email}]}),
+ * plain CSV/text (name,email per line), an .xlsx workbook, or a .docx
+ * roster (one "Name, email" per line/table row). All formats funnel into
+ * the same {name, email}[] shape before hitting `importRows` below.
  */
 export async function importParticipants(orgId: string, org: any, request: Request, env: Env): Promise<Response> {
   if (org.plan_tier === 'free') {
@@ -62,6 +61,13 @@ export async function importParticipants(orgId: string, org: any, request: Reque
   if (contentType.includes('application/json')) {
     const body = await request.json<{ rows?: { name: string; email: string }[] }>().catch(() => null);
     rows = body?.rows || [];
+  } else if (
+    contentType.includes('spreadsheetml.sheet') ||
+    contentType.includes('vnd.ms-excel')
+  ) {
+    rows = parseXlsxRows(await request.arrayBuffer());
+  } else if (contentType.includes('wordprocessingml.document')) {
+    rows = await parseDocxRows(await request.arrayBuffer());
   } else {
     const text = await request.text();
     rows = text

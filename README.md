@@ -55,7 +55,7 @@ your Worker's URL (e.g. `https://brew-buddies-api.<your-subdomain>.workers.dev/v
 | `POST /v1/organizations` | none | — | Create a company or friend group, get back an API key |
 | `GET/PATCH /v1/organizations/:id` | — / key | — | Read or update org settings |
 | `POST /v1/organizations/:id/participants` | key | Free+ | Add one person by hand (capped at 12 on Free) |
-| `POST /v1/organizations/:id/participants/import` | key | Plus+ | Bulk import a roster (CSV working now; xlsx/docx parsing is a marked extension point in `routes/participants.ts`) |
+| `POST /v1/organizations/:id/participants/import` | key | Plus+ | Bulk import a roster — CSV, JSON, `.xlsx`, or `.docx` |
 | `POST /v1/organizations/:id/rounds` | key | Free+ | Run the matching engine, create this round's tables |
 | `GET /v1/groups/:id` | — | — | See who's at a table and when |
 | `POST /v1/groups/:id/invite` | — | Plus+ | Generate the `.ics` invite for a table |
@@ -67,18 +67,17 @@ response shape lives in `docs/api-design.md`.
 
 - **Matching, group sizing, repeat-avoidance, .ics generation** — fully
   implemented and tested logic in `api/src/lib/`.
-- **Bulk import** — CSV works end-to-end. Real `.xlsx`/`.docx` parsing needs
-  a library (SheetJS for Excel, mammoth for Word) that isn't bundled here to
-  keep the Worker dependency-light; `importParticipants` in
-  `routes/participants.ts` is the exact spot to wire it in.
+- **Bulk import** — CSV, JSON, `.xlsx` (via SheetJS) and `.docx` (via
+  mammoth, one "Name, email" per line/table row) all work end-to-end,
+  parsed in `lib/fileImport.ts` and wired into `importParticipants`.
+- **Recurring rounds** (weekly/fortnightly/monthly auto-trigger) — a daily
+  Cloudflare Cron Trigger (`[triggers]` in `wrangler.toml`, handler in
+  `lib/scheduler.ts`) checks every org on an automatic cadence and runs a
+  new round for whichever ones are due.
 - **Sending the invite email** — `POST /v1/groups/:id/invite` generates a
   correct `.ics` file and returns it, but doesn't email it yet. Drop in a
   transactional email provider (Postmark, Resend, SES) where the route
   comment says so.
-- **Recurring rounds** (weekly/fortnightly auto-trigger) — the `match_frequency`
-  field exists on the org, but nothing schedules the cron yet. A Cloudflare
-  Cron Trigger calling `POST /v1/organizations/:id/rounds` on schedule is the
-  natural next step.
 
 ## Pushing this to GitHub
 

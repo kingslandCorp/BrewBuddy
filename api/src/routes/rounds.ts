@@ -2,11 +2,26 @@ import { newId, json, errorResponse } from '../lib/db';
 import { determineGroupSize, buildGroups, pairsWithinGroup, Participant } from '../lib/matching';
 import type { Env } from './organizations';
 
-export async function triggerRound(orgId: string, org: any, request: Request, env: Env): Promise<Response> {
-  const body = await request.json<Record<string, any>>().catch(() => ({} as any));
-  const scheduledDate: string = body.scheduled_date || new Date().toISOString().slice(0, 10);
-  const sizeOverride: number | undefined = body.group_size;
+export interface RoundResult {
+  id: string;
+  status: 'matched';
+  participant_count: number;
+  group_size_used: number;
+  groups: string[];
+}
 
+/**
+ * Core matching + persistence logic for a round. Shared by the HTTP
+ * endpoint (POST /v1/organizations/:id/rounds) and the cron handler that
+ * auto-triggers rounds for orgs on a weekly/fortnightly/monthly cadence.
+ */
+export async function runRoundForOrg(
+  orgId: string,
+  org: any,
+  env: Env,
+  scheduledDate: string = new Date().toISOString().slice(0, 10),
+  sizeOverride?: number
+): Promise<RoundResult | { error: string }> {
   const { results: participantRows } = await env.DB.prepare(
     `SELECT id, name, email FROM participants WHERE organization_id = ? AND status = 'active'`
   )
@@ -15,7 +30,7 @@ export async function triggerRound(orgId: string, org: any, request: Request, en
   const participants = participantRows as unknown as Participant[];
 
   if (participants.length < 2) {
-    return errorResponse('Need at least 2 active participants to run a round.');
+    return { error: 'Need at least 2 active participants to run a round.' };
   }
 
   // Pull recent match history within the org's cooldown window so the
@@ -83,14 +98,20 @@ export async function triggerRound(orgId: string, org: any, request: Request, en
     }
   }
 
-  return json(
-    {
-      id: roundId,
-      status: 'matched',
-      participant_count: participants.length,
-      group_size_used: targetSize,
-      groups: groupIds,
-    },
-    201
-  );
+  return {
+    id: roundId,
+    status: 'matched',
+    participant_count: participants.length,
+    group_size_used: targetSize,
+    groups: groupIds,
+  };
+}
+
+export async function triggerRound(orgId: string, org: any, request: Request, env: Env): Promise<Response> {
+  const body = await request.json<Record<string, any>>().catch(() => ({} as any));
+  const scheduledDate: string = body.scheduled_date || new Date().toISOString().slice(0, 10);
+  const result = await runRoundForOrg(orgId, org, env, scheduledDate, body.group_size);
+
+  if ('error' in result) return errorResponse(result.error);
+  return json(result, 201);
 }

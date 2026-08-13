@@ -1,8 +1,13 @@
 name = "brew-buddies-api"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
 
 [[d1_databases]]
 binding = "DB"
 database_name = "brewbuddy-db"
 database_id = "1c1d6bf2-b782-4421-a22a-e0db3c6551ba"
+
+# Checks daily for orgs whose weekly/fortnightly/monthly round is due.
+[triggers]
+crons = ["0 8 * * *"]

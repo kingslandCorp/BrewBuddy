@@ -3,8 +3,22 @@ import { createOrganization, getOrganization, updateOrganization, Env } from './
 import { addParticipant, listParticipants, importParticipants } from './routes/participants';
 import { triggerRound } from './routes/rounds';
 import { getGroup, generateInvite } from './routes/groups';
+import { runDueRounds } from './lib/scheduler';
 
 export default {
+  // Runs on the schedule configured under [triggers] in wrangler.toml —
+  // checks every org on an automatic (weekly/fortnightly/monthly) cadence
+  // and runs a new round for whichever ones are due.
+  async scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(
+      runDueRounds(env).then((outcomes) => {
+        for (const o of outcomes) {
+          if (o.result !== 'not_due') console.log(`[cron] org ${o.orgId}: ${o.result}`);
+        }
+      })
+    );
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname.replace(/\/+$/, '');
