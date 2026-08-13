@@ -29,7 +29,7 @@
   html{scroll-behavior:smooth;}
   body{
     margin:0;
-    background:var(--parchment);
+    background:var(--cream);
     color:var(--ink);
     font-family:'Inter',sans-serif;
     line-height:1.5;
@@ -50,7 +50,7 @@
   /* ---------- NAV ---------- */
   header.nav{
     position:sticky; top:0; z-index:50;
-    background:rgba(242,233,220,0.92);
+    background:rgba(255,246,233,0.92);
     backdrop-filter:blur(6px);
     border-bottom:1px solid var(--line);
   }
@@ -205,7 +205,7 @@
   .form-note{ font-size:0.78rem; color:var(--ink-soft); margin-top:10px; }
   #form-msg{ font-size:0.85rem; margin-top:12px; font-weight:500; }
 
-  footer{ padding:40px 28px; text-align:center; font-size:0.82rem; color:var(--ink-soft); }
+  footer{ padding:40px 28px; text-align:center; font-size:0.82rem; color:var(--ink-soft); background:var(--parchment); border-top:1px solid var(--line); }
 
   @media (max-width:860px){
     .hero-grid{ grid-template-columns:1fr; }
@@ -233,6 +233,10 @@
     </nav>
   </div>
 </header>
+
+<div style="display:flex; justify-content:center; padding:28px 20px 0;">
+  <img src="assets/header-lockup.png" alt="Brew Buddies — Good people. Great connections." style="width:100%; max-width:640px; height:auto;">
+</div>
 
 <section class="hero">
   <div class="wrap hero-grid">
