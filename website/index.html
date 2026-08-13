@@ -4,20 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brew Buddies — Coffee, but you never know who you're getting</title>
-<meta name="description" content="Start a coffee roulette group for your friends, team, or community. We draw the tickets, seat the tables, and send the calendar invite.">
+<meta name="description" content="Good people. Great connections. Start a coffee roulette group for your friends, team, or community — we draw the tickets, seat the tables, and send the calendar invite.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --espresso:#2B1B14;
-    --parchment:#F2E9DC;
-    --cherry:#8C2F39;
-    --cherry-dark:#6E2029;
-    --cream:#FFF8EE;
-    --gold:#C99A3F;
-    --ink:#3A2A20;
-    --ink-soft:#6B5B4E;
-    --line: rgba(58,42,32,0.14);
+    --espresso:#4A2E1E;
+    --parchment:#FFF6E9;
+    --cherry:#E4693D;
+    --cherry-dark:#C1502A;
+    --cream:#FFFBF3;
+    --gold:#F5B942;
+    --sage:#9DBEA0;
+    --berry:#E8567A;
+    --ink:#4A2E1E;
+    --ink-soft:#8A6A54;
+    --line: rgba(74,46,30,0.14);
     --radius: 4px;
   }
   *{box-sizing:border-box;}
@@ -161,6 +163,8 @@
     border-top:1.5px dashed rgba(58,42,32,0.2);
   }
   .stub-tag{ font-family:'IBM Plex Mono',monospace; font-size:0.72rem; color:var(--cherry); font-weight:600; margin-bottom:14px; display:block; }
+  .stub-tag--sage{ color:#5F8264; }
+  .stub-tag--berry{ color:var(--berry); }
   .stub h3{ font-size:1.24rem; margin-bottom:10px; }
   .stub p{ color:var(--ink-soft); font-size:0.93rem; margin:0 0 34px; }
   .stub-foot{ position:absolute; bottom:14px; left:24px; right:24px; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--ink-soft); }
@@ -319,13 +323,13 @@
         <div class="stub-foot"><span>ADMIT ONE</span><span>NO SLACK NEEDED</span></div>
       </div>
       <div class="stub">
-        <span class="stub-tag">STEP 2</span>
+        <span class="stub-tag stub-tag--sage">STEP 2</span>
         <h3>We shuffle the tables</h3>
         <p>Small groups get paired up. Bigger groups get seated 3 or 4 to a table, so nobody's stuck coordinating a hundred one-on-ones.</p>
         <div class="stub-foot"><span>ADMIT ONE</span><span>NEVER A REPEAT</span></div>
       </div>
       <div class="stub">
-        <span class="stub-tag">STEP 3</span>
+        <span class="stub-tag stub-tag--berry">STEP 3</span>
         <h3>Everyone gets a ticket</h3>
         <p>A real calendar invite lands in every inbox — time, duration, and table all set. No "let's find a time" thread required.</p>
         <div class="stub-foot"><span>ADMIT ONE</span><span>.ICS INCLUDED</span></div>
@@ -402,7 +406,7 @@
 
 <footer>
   <div class="wrap">
-    © <span id="year"></span> Brew Buddies. Coffee roulette for people who don't have a Slack workspace.
+    © <span id="year"></span> Brew Buddies — Good people. Great connections.
   </div>
 </footer>
 
@@ -456,10 +460,10 @@
       if (!res.ok) throw new Error('API not reachable yet');
       const data = await res.json();
       msg.textContent = `You're in — organization ${data.id} created. Check your email.`;
-      msg.style.color = '#C99A3F';
+      msg.style.color = '#F5B942';
     } catch (err) {
       msg.textContent = 'API isn\'t deployed yet — this form is wired and ready for when it is.';
-      msg.style.color = '#C99A3F';
+      msg.style.color = '#F5B942';
     }
   });
 </script>
