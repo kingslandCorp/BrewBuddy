@@ -1,0 +1,95 @@
+# Brew Buddies
+
+Coffee roulette for people who don't have a Slack workspace. Add your friends,
+your team, or your whole company — Brew Buddies shuffles everyone into tables
+of 2, 3, or 4 and sends a real calendar invite.
+
+This repo has two parts and the design work behind them:
+
+```
+BrewBuddy/
+├── website/            static marketing site (index.html — no build step)
+├── api/                Cloudflare Worker + D1 API
+│   ├── schema.sql       database schema
+│   ├── wrangler.toml    Worker + D1 binding config
+│   └── src/
+│       ├── index.ts     router
+│       ├── routes/      organizations, participants, rounds, groups
+│       └── lib/         matching engine, .ics generator, db helpers
+└── docs/
+    ├── api-design.md            full API design + tiering rationale
+    └── competitive-matrix.md    competitor teardown that shaped this design
+```
+
+## Quick start
+
+### 1. Website
+`website/index.html` is fully self-contained (fonts load from Google Fonts,
+everything else is inline). Open it directly in a browser, or serve the
+folder with anything static (Cloudflare Pages, Netlify, GitHub Pages, `python
+-m http.server`).
+
+### 2. API
+```bash
+cd api
+npm install
+npx wrangler login
+npx wrangler d1 create brewbuddy-db        # copy the returned database_id into wrangler.toml
+npm run db:migrate                          # applies schema.sql locally
+npm run dev                                 # local dev server
+```
+
+To ship it for real:
+```bash
+npm run db:migrate:remote                   # applies schema.sql to the live D1 database
+npm run deploy                              # publishes the Worker
+```
+
+Once deployed, update `API_BASE` near the bottom of `website/index.html` to
+your Worker's URL (e.g. `https://brew-buddies-api.<your-subdomain>.workers.dev/v1`).
+
+## API at a glance
+
+| Endpoint | Auth | Tier | Does |
+|---|---|---|---|
+| `POST /v1/organizations` | none | — | Create a company or friend group, get back an API key |
+| `GET/PATCH /v1/organizations/:id` | — / key | — | Read or update org settings |
+| `POST /v1/organizations/:id/participants` | key | Free+ | Add one person by hand (capped at 12 on Free) |
+| `POST /v1/organizations/:id/participants/import` | key | Plus+ | Bulk import a roster (CSV working now; xlsx/docx parsing is a marked extension point in `routes/participants.ts`) |
+| `POST /v1/organizations/:id/rounds` | key | Free+ | Run the matching engine, create this round's tables |
+| `GET /v1/groups/:id` | — | — | See who's at a table and when |
+| `POST /v1/groups/:id/invite` | — | Plus+ | Generate the `.ics` invite for a table |
+
+Full reasoning for the tiering, the group-size algorithm, and every request/
+response shape lives in `docs/api-design.md`.
+
+## What's stubbed vs. real
+
+- **Matching, group sizing, repeat-avoidance, .ics generation** — fully
+  implemented and tested logic in `api/src/lib/`.
+- **Bulk import** — CSV works end-to-end. Real `.xlsx`/`.docx` parsing needs
+  a library (SheetJS for Excel, mammoth for Word) that isn't bundled here to
+  keep the Worker dependency-light; `importParticipants` in
+  `routes/participants.ts` is the exact spot to wire it in.
+- **Sending the invite email** — `POST /v1/groups/:id/invite` generates a
+  correct `.ics` file and returns it, but doesn't email it yet. Drop in a
+  transactional email provider (Postmark, Resend, SES) where the route
+  comment says so.
+- **Recurring rounds** (weekly/fortnightly auto-trigger) — the `match_frequency`
+  field exists on the org, but nothing schedules the cron yet. A Cloudflare
+  Cron Trigger calling `POST /v1/organizations/:id/rounds` on schedule is the
+  natural next step.
+
+## Pushing this to GitHub
+
+These files were built outside of git. To get them into
+`kingslandCorp/BrewBuddy`:
+
+```bash
+git clone https://github.com/kingslandCorp/BrewBuddy.git
+# copy the contents of this folder into that clone, then:
+cd BrewBuddy
+git add .
+git commit -m "Add Brew Buddies website and API"
+git push
+```

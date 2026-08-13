@@ -1,0 +1,8 @@
+name = "brew-buddies-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "brewbuddy-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
