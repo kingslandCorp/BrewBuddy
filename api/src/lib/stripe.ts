@@ -3,11 +3,24 @@
 // Cloudflare Workers' Web Crypto covers webhook signature verification.
 
 export type Tier = 'plus' | 'community' | 'corporate';
+export type Interval = 'month' | 'year';
 
-export const TIER_PRICE_IDS: Record<Tier, string> = {
-  plus: 'price_1U47THIgiAIZiKh9JehuVNke',
-  community: 'price_1U47TIIgiAIZiKh9Dp7LUpoD',
-  corporate: 'price_1U47TJIgiAIZiKh9mHgbeeXn',
+/** Flat-rate pricing: Plus, Community, and Corporate each have a monthly
+ * and a yearly price on the same Stripe product (yearly = 10x monthly,
+ * i.e. ~2 months free) — same pattern as Stripe's flat-rate pricing guide. */
+export const TIER_PRICE_IDS: Record<Tier, Record<Interval, string>> = {
+  plus: {
+    month: 'price_1U47THIgiAIZiKh9JehuVNke',
+    year: 'price_1U47xuIgiAIZiKh9c0VrJHoD',
+  },
+  community: {
+    month: 'price_1U47TIIgiAIZiKh9Dp7LUpoD',
+    year: 'price_1U47xuIgiAIZiKh9b5DjWu2i',
+  },
+  corporate: {
+    month: 'price_1U47TJIgiAIZiKh9mHgbeeXn',
+    year: 'price_1U47xvIgiAIZiKh9Lf2nNEho',
+  },
 };
 
 function formEncode(params: Record<string, string>): string {
@@ -18,10 +31,10 @@ function formEncode(params: Record<string, string>): string {
 
 export async function createCheckoutSession(
   secretKey: string,
-  opts: { orgId: string; tier: Tier; successUrl: string; cancelUrl: string }
+  opts: { orgId: string; tier: Tier; interval: Interval; successUrl: string; cancelUrl: string }
 ): Promise<{ url: string } | { error: string }> {
-  const priceId = TIER_PRICE_IDS[opts.tier];
-  if (!priceId) return { error: `unknown tier: ${opts.tier}` };
+  const priceId = TIER_PRICE_IDS[opts.tier]?.[opts.interval];
+  if (!priceId) return { error: `unknown tier/interval: ${opts.tier}/${opts.interval}` };
 
   const body = formEncode({
     mode: 'subscription',

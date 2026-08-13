@@ -1,17 +1,22 @@
 import { json, errorResponse } from '../lib/db';
-import { createCheckoutSession, verifyStripeSignature, Tier } from '../lib/stripe';
+import { createCheckoutSession, verifyStripeSignature, Tier, Interval } from '../lib/stripe';
 import type { Env } from './organizations';
 
 const VALID_TIERS: Tier[] = ['plus', 'community', 'corporate'];
+const VALID_INTERVALS: Interval[] = ['month', 'year'];
 
-/** Org-scoped, requires the org's API key. Body: { tier: 'plus'|'community'|'corporate' }. */
+/** Org-scoped, requires the org's API key. Body: { tier: 'plus'|'community'|'corporate', interval?: 'month'|'year' }. */
 export async function createCheckout(orgId: string, org: any, request: Request, env: Env): Promise<Response> {
   if (!env.STRIPE_SECRET_KEY) return errorResponse('billing is not configured yet', 500);
 
-  const body = await request.json<{ tier?: string }>().catch(() => null);
+  const body = await request.json<{ tier?: string; interval?: string }>().catch(() => null);
   const tier = body?.tier as Tier;
+  const interval = (body?.interval as Interval) || 'month';
   if (!tier || !VALID_TIERS.includes(tier)) {
     return errorResponse(`tier must be one of: ${VALID_TIERS.join(', ')}`);
+  }
+  if (!VALID_INTERVALS.includes(interval)) {
+    return errorResponse(`interval must be one of: ${VALID_INTERVALS.join(', ')}`);
   }
 
   const siteOrigin = 'https://www.brew-buddies.com';
@@ -19,6 +24,7 @@ export async function createCheckout(orgId: string, org: any, request: Request, 
   const result = await createCheckoutSession(env.STRIPE_SECRET_KEY, {
     orgId,
     tier,
+    interval,
     successUrl: `${siteOrigin}/manage.html?org=${orgId}&key=${org.api_key}&upgraded=1`,
     cancelUrl: `${siteOrigin}/manage.html?org=${orgId}&key=${org.api_key}`,
   });

@@ -169,10 +169,14 @@
     <div class="cups">☕☕☕</div>
     <h2>Your Free table is full</h2>
     <p>The Free plan tops out at 8 people. Upgrade to keep adding your group — bulk import, bigger tables, and recurring rounds come with it.</p>
+    <div class="interval-toggle" style="display:flex; justify-content:center; gap:0; margin-bottom:16px; border:1px solid var(--line); border-radius:999px; padding:3px; width:fit-content; margin-left:auto; margin-right:auto;">
+      <button type="button" class="interval-btn active" data-interval="month" style="border:none; background:var(--cherry-dark); color:var(--cream); padding:6px 16px; border-radius:999px; font-size:0.8rem; font-weight:600; cursor:pointer;">Monthly</button>
+      <button type="button" class="interval-btn" data-interval="year" style="border:none; background:transparent; color:var(--ink-soft); padding:6px 16px; border-radius:999px; font-size:0.8rem; font-weight:600; cursor:pointer;">Yearly — 2 months free</button>
+    </div>
     <div class="modal-tiers">
-      <button class="modal-tier upgrade-btn" data-tier="plus" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Plus</b><span>Up to 100 people</span></div><div class="amt">£29/mo →</div></button>
-      <button class="modal-tier upgrade-btn" data-tier="community" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Community</b><span>100–249 people</span></div><div class="amt">£149/mo →</div></button>
-      <button class="modal-tier upgrade-btn" data-tier="corporate" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Corporate</b><span>250+ people</span></div><div class="amt">£495/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="plus" data-month="£29/mo" data-year="£290/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Plus</b><span>Up to 100 people</span></div><div class="amt">£29/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="community" data-month="£149/mo" data-year="£1490/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Community</b><span>100–249 people</span></div><div class="amt">£149/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="corporate" data-month="£495/mo" data-year="£4950/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Corporate</b><span>250+ people</span></div><div class="amt">£495/mo →</div></button>
     </div>
     <div class="modal-actions">
       <div id="paywall-msg" style="font-size:0.82rem; color:var(--berry-text); min-height:1.2em;"></div>
@@ -192,6 +196,7 @@
   const loginMsg = document.getElementById('login-msg');
   const statusMsg = document.getElementById('status-msg');
   const paywall = document.getElementById('paywall');
+  let selectedInterval = 'month';
 
   document.getElementById('f-org-id').value = orgId;
   document.getElementById('f-api-key').value = apiKey;
@@ -317,7 +322,7 @@
     const res = await fetch(`${API_BASE}/organizations/${orgId}/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ tier })
+      body: JSON.stringify({ tier, interval: selectedInterval })
     });
 
     if (!res.ok) {
@@ -359,6 +364,21 @@
   document.getElementById('manage-billing').addEventListener('click', openBillingPortal);
   document.querySelectorAll('.upgrade-btn').forEach((btn) => {
     btn.addEventListener('click', () => startCheckout(btn.dataset.tier));
+  });
+  document.querySelectorAll('.interval-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedInterval = btn.dataset.interval;
+      document.querySelectorAll('.interval-btn').forEach((b) => {
+        const on = b.dataset.interval === selectedInterval;
+        b.classList.toggle('active', on);
+        b.style.background = on ? 'var(--cherry-dark)' : 'transparent';
+        b.style.color = on ? 'var(--cream)' : 'var(--ink-soft)';
+      });
+      document.querySelectorAll('.upgrade-btn').forEach((tierBtn) => {
+        const amt = tierBtn.querySelector('.amt');
+        amt.textContent = (selectedInterval === 'year' ? tierBtn.dataset.year : tierBtn.dataset.month) + ' →';
+      });
+    });
   });
 
   if (orgId && apiKey) loadOrg();

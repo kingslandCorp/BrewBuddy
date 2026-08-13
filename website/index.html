@@ -351,6 +351,12 @@
       <h2>Pick your ticket.</h2>
       <p class="section-desc">No per-seat pricing, no minimum headcount, no sales call to start. Free stays free — forever — for a group of friends.</p>
     </div>
+    <div style="display:flex; justify-content:center; margin-bottom:30px;">
+      <div style="display:flex; border:1px solid var(--line); border-radius:999px; padding:4px; background:var(--cream);">
+        <button type="button" class="price-interval-btn active" data-interval="month" style="border:none; background:var(--cherry-dark); color:var(--cream); padding:8px 20px; border-radius:999px; font-size:0.88rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Monthly</button>
+        <button type="button" class="price-interval-btn" data-interval="year" style="border:none; background:transparent; color:var(--ink-soft); padding:8px 20px; border-radius:999px; font-size:0.88rem; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif;">Yearly — 2 months free</button>
+      </div>
+    </div>
     <div class="pricing-grid">
       <div class="price-ticket featured">
         <div class="featured-flag">MOST DRAWN</div>
@@ -367,7 +373,7 @@
       </div>
       <div class="price-ticket">
         <div class="price-name">Plus</div>
-        <div class="price-amt">£29<span>/mo</span></div>
+        <div class="price-amt price-interval-amt" data-month-amt="£29" data-month-suffix="/mo" data-year-amt="£290" data-year-suffix="/yr">£29<span>/mo</span></div>
         <div class="price-blurb">For a group that's outgrown adding people by hand — up to 100 people.</div>
         <ul class="price-feats">
           <li>Bulk import from Excel or Word</li>
@@ -379,7 +385,7 @@
       </div>
       <div class="price-ticket">
         <div class="price-name">Community</div>
-        <div class="price-amt">£149<span>/mo</span></div>
+        <div class="price-amt price-interval-amt" data-month-amt="£149" data-month-suffix="/mo" data-year-amt="£1490" data-year-suffix="/yr">£149<span>/mo</span></div>
         <div class="price-blurb">For alumni networks, coworking spaces, and companies — 100 to 249 people.</div>
         <ul class="price-feats">
           <li>Up to 249 people, unlimited rounds</li>
@@ -391,7 +397,7 @@
       </div>
       <div class="price-ticket">
         <div class="price-name">Corporate</div>
-        <div class="price-amt">£495<span>/mo</span></div>
+        <div class="price-amt price-interval-amt" data-month-amt="£495" data-month-suffix="/mo" data-year-amt="£4950" data-year-suffix="/yr">£495<span>/mo</span></div>
         <div class="price-blurb">For big organizations running Brew Buddies company-wide — 250 people and up.</div>
         <ul class="price-feats">
           <li>250+ people, unlimited rounds</li>
@@ -432,6 +438,23 @@
 
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Pricing section: monthly / yearly toggle (Plus, Community, Corporate).
+  document.querySelectorAll('.price-interval-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const interval = btn.dataset.interval;
+      document.querySelectorAll('.price-interval-btn').forEach((b) => {
+        const on = b.dataset.interval === interval;
+        b.style.background = on ? 'var(--cherry-dark)' : 'transparent';
+        b.style.color = on ? 'var(--cream)' : 'var(--ink-soft)';
+      });
+      document.querySelectorAll('.price-interval-amt').forEach((el) => {
+        const amt = interval === 'year' ? el.dataset.yearAmt : el.dataset.monthAmt;
+        const suffix = interval === 'year' ? el.dataset.yearSuffix : el.dataset.monthSuffix;
+        el.innerHTML = `${amt}<span>${suffix}</span>`;
+      });
+    });
+  });
 
   // Signature interaction: redraw the hero ticket
   const sizes = [
