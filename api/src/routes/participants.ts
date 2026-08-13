@@ -2,7 +2,7 @@ import { newId, json, errorResponse } from '../lib/db';
 import { parseXlsxRows, parseDocxRows } from '../lib/fileImport';
 import type { Env } from './organizations';
 
-const FREE_TIER_PARTICIPANT_CAP = 12;
+const FREE_TIER_PARTICIPANT_CAP = 8;
 
 /** Free tier — add one participant at a time via the manual form. */
 export async function addParticipant(orgId: string, org: any, request: Request, env: Env): Promise<Response> {
