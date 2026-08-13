@@ -3,6 +3,8 @@ import { newId, newApiKey, json, errorResponse } from '../lib/db';
 export interface Env {
   DB: D1Database;
   RESEND_API_KEY?: string;
+  STRIPE_SECRET_KEY?: string;
+  STRIPE_WEBHOOK_SECRET?: string;
 }
 
 export async function createOrganization(request: Request, env: Env): Promise<Response> {

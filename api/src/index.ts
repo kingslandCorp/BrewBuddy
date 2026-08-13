@@ -4,6 +4,7 @@ import { addParticipant, listParticipants, importParticipants } from './routes/p
 import { triggerRound } from './routes/rounds';
 import { getGroup, generateInvite } from './routes/groups';
 import { runDueRounds } from './lib/scheduler';
+import { createCheckout, handleStripeWebhook } from './routes/billing';
 
 export default {
   // Runs on the schedule configured under [triggers] in wrangler.toml —
@@ -67,6 +68,15 @@ export default {
         if (sub === '/rounds' && method === 'POST') {
           return await triggerRound(orgId, org, request, env);
         }
+
+        if (sub === '/checkout' && method === 'POST') {
+          return await createCheckout(orgId, org, request, env);
+        }
+      }
+
+      // Stripe webhook — no auth, verifies its own signature.
+      if (path === '/v1/stripe/webhook' && method === 'POST') {
+        return await handleStripeWebhook(request, env);
       }
 
       // GET /v1/groups/:id and POST /v1/groups/:id/invite

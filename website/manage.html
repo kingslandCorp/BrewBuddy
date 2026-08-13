@@ -137,7 +137,7 @@
       </div>
       <div id="cap-wrap" class="hidden">
         <div class="cap-bar-track"><div class="cap-bar-fill" id="cap-bar-fill" style="width:0%;"></div></div>
-        <div class="cap-label"><span id="cap-label-text">0 / 8</span> free spots used</div>
+        <div class="cap-label"><span id="cap-label-text">0 / 8</span> free spots used — <button id="proactive-upgrade" style="background:none; border:none; color:var(--cherry-dark); font-weight:600; cursor:pointer; padding:0; font-size:inherit;">upgrade any time →</button></div>
       </div>
     </div>
 
@@ -166,12 +166,12 @@
     <h2>Your Free table is full</h2>
     <p>The Free plan tops out at 8 people. Upgrade to keep adding your group — bulk import, bigger tables, and recurring rounds come with it.</p>
     <div class="modal-tiers">
-      <div class="modal-tier"><div><b>Plus</b><span>Up to 100 people</span></div><div class="amt">£29/mo</div></div>
-      <div class="modal-tier"><div><b>Community</b><span>100–249 people</span></div><div class="amt">£149/mo</div></div>
-      <div class="modal-tier"><div><b>Corporate</b><span>250+ people</span></div><div class="amt">£495/mo</div></div>
+      <button class="modal-tier upgrade-btn" data-tier="plus" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Plus</b><span>Up to 100 people</span></div><div class="amt">£29/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="community" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Community</b><span>100–249 people</span></div><div class="amt">£149/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="corporate" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Corporate</b><span>250+ people</span></div><div class="amt">£495/mo →</div></button>
     </div>
     <div class="modal-actions">
-      <a href="index.html#pricing" class="btn btn-primary">See plans &amp; upgrade →</a>
+      <div id="paywall-msg" style="font-size:0.82rem; color:var(--berry-text); min-height:1.2em;"></div>
       <button class="modal-close" id="paywall-close">Not right now</button>
     </div>
   </div>
@@ -303,9 +303,35 @@
     await refreshPeople();
   }
 
+  async function startCheckout(tier) {
+    const paywallMsg = document.getElementById('paywall-msg');
+    paywallMsg.style.color = 'var(--ink-soft)';
+    paywallMsg.textContent = 'Taking you to checkout…';
+
+    const res = await fetch(`${API_BASE}/organizations/${orgId}/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ tier })
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      paywallMsg.style.color = 'var(--berry-text)';
+      paywallMsg.textContent = body.error || 'Could not start checkout — try again in a moment.';
+      return;
+    }
+
+    const { checkout_url } = await res.json();
+    window.location.href = checkout_url;
+  }
+
   document.getElementById('load-btn').addEventListener('click', loadOrg);
   document.getElementById('add-btn').addEventListener('click', addPerson);
   document.getElementById('paywall-close').addEventListener('click', () => paywall.classList.add('hidden'));
+  document.getElementById('proactive-upgrade').addEventListener('click', () => paywall.classList.remove('hidden'));
+  document.querySelectorAll('.upgrade-btn').forEach((btn) => {
+    btn.addEventListener('click', () => startCheckout(btn.dataset.tier));
+  });
 
   if (orgId && apiKey) loadOrg();
 </script>

@@ -5,7 +5,7 @@ CREATE TABLE IF NOT EXISTS organizations (
   id                        TEXT PRIMARY KEY,
   name                      TEXT NOT NULL,
   type                      TEXT NOT NULL CHECK (type IN ('company','friend_group')),
-  plan_tier                 TEXT NOT NULL DEFAULT 'free' CHECK (plan_tier IN ('free','freemium','pro')),
+  plan_tier                 TEXT NOT NULL DEFAULT 'free' CHECK (plan_tier IN ('free','plus','community','corporate')),
   timezone                  TEXT NOT NULL DEFAULT 'UTC',
   meeting_duration_minutes  INTEGER NOT NULL DEFAULT 30,
   meeting_time              TEXT NOT NULL DEFAULT '10:00',
@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS organizations (
   api_key                   TEXT NOT NULL UNIQUE,
   owner_name                TEXT,
   owner_email               TEXT,
+  stripe_customer_id        TEXT,
+  stripe_subscription_id    TEXT,
   created_at                TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
