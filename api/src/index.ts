@@ -4,7 +4,7 @@ import { addParticipant, listParticipants, importParticipants } from './routes/p
 import { triggerRound } from './routes/rounds';
 import { getGroup, generateInvite } from './routes/groups';
 import { runDueRounds } from './lib/scheduler';
-import { createCheckout, handleStripeWebhook } from './routes/billing';
+import { createCheckout, createBillingPortalSession, handleStripeWebhook } from './routes/billing';
 
 export default {
   // Runs on the schedule configured under [triggers] in wrangler.toml —
@@ -71,6 +71,10 @@ export default {
 
         if (sub === '/checkout' && method === 'POST') {
           return await createCheckout(orgId, org, request, env);
+        }
+
+        if (sub === '/billing-portal' && method === 'POST') {
+          return await createBillingPortalSession(orgId, org, env);
         }
       }
 

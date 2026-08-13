@@ -139,6 +139,10 @@
         <div class="cap-bar-track"><div class="cap-bar-fill" id="cap-bar-fill" style="width:0%;"></div></div>
         <div class="cap-label"><span id="cap-label-text">0 / 8</span> free spots used — <button id="proactive-upgrade" style="background:none; border:none; color:var(--cherry-dark); font-weight:600; cursor:pointer; padding:0; font-size:inherit;">upgrade any time →</button></div>
       </div>
+      <div id="billing-wrap" class="hidden" style="margin-top:6px;">
+        <button id="manage-billing" style="background:none; border:none; color:var(--cherry-dark); font-weight:600; cursor:pointer; padding:0; font-size:0.85rem;">Manage billing (payment method, invoices, cancel) →</button>
+        <div id="billing-msg" style="font-size:0.82rem; color:var(--berry-text); margin-top:4px;"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -240,6 +244,8 @@
       capWrap.classList.add('hidden');
     }
 
+    document.getElementById('billing-wrap').classList.toggle('hidden', org.plan_tier === 'free');
+
     const list = document.getElementById('people-list');
     const emptyNote = document.getElementById('empty-note');
     list.innerHTML = '';
@@ -325,10 +331,32 @@
     window.location.href = checkout_url;
   }
 
+  async function openBillingPortal() {
+    const billingMsg = document.getElementById('billing-msg');
+    billingMsg.style.color = 'var(--ink-soft)';
+    billingMsg.textContent = 'Opening billing portal…';
+
+    const res = await fetch(`${API_BASE}/organizations/${orgId}/billing-portal`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      billingMsg.style.color = 'var(--berry-text)';
+      billingMsg.textContent = body.error || 'Could not open the billing portal — try again in a moment.';
+      return;
+    }
+
+    const { portal_url } = await res.json();
+    window.location.href = portal_url;
+  }
+
   document.getElementById('load-btn').addEventListener('click', loadOrg);
   document.getElementById('add-btn').addEventListener('click', addPerson);
   document.getElementById('paywall-close').addEventListener('click', () => paywall.classList.add('hidden'));
   document.getElementById('proactive-upgrade').addEventListener('click', () => paywall.classList.remove('hidden'));
+  document.getElementById('manage-billing').addEventListener('click', openBillingPortal);
   document.querySelectorAll('.upgrade-btn').forEach((btn) => {
     btn.addEventListener('click', () => startCheckout(btn.dataset.tier));
   });
