@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "brew-buddies-site",
+  "compatibility_date": "2026-08-13",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "website"
+  },
+  "routes": [
+    { "pattern": "www.brew-buddies.com", "custom_domain": true },
+    { "pattern": "brew-buddies.com", "custom_domain": true }
+  ]
+}
