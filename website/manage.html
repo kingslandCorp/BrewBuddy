@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage your group — Brew Buddies</title>
+<meta name="description" content="Add people to your Brew Buddies group and see who's in the draw.">
+<link rel="icon" type="image/png" href="assets/logo-full.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --espresso:#4A2E1E; --parchment:#FFF6E9; --cherry:#E4693D; --cherry-dark:#C1502A;
+    --cream:#FFFBF3; --gold:#F5B942; --sage:#9DBEA0; --sage-text:#4E6E54;
+    --berry:#E8567A; --berry-text:#B8365A; --ink:#4A2E1E; --ink-soft:#8A6A54;
+    --line: rgba(74,46,30,0.14); --radius: 4px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--cream); color:var(--ink);
+    font-family:'Inter',sans-serif; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; letter-spacing:-0.01em; color:var(--espresso); margin:0; }
+  .mono{ font-family:'IBM Plex Mono',monospace; letter-spacing:0.02em; }
+  a{ color:inherit; }
+  .wrap{ max-width:640px; margin:0 auto; padding:0 24px; }
+
+  header.nav{ background:var(--parchment); border-bottom:1px solid var(--line); }
+  .nav-inner{ max-width:640px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; gap:9px; }
+  .logo{ display:flex; align-items:center; gap:9px; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:1.1rem; color:var(--espresso); text-decoration:none; }
+  .logo img{ width:32px; height:32px; }
+
+  main{ padding:44px 0 80px; }
+  .eyebrow{
+    display:block; font-family:'IBM Plex Mono',monospace; font-size:0.76rem; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--cherry-dark); font-weight:600; margin-bottom:10px;
+  }
+  h1{ font-size:2.1rem; line-height:1.1; margin-bottom:10px; }
+  .lede{ color:var(--ink-soft); margin-bottom:30px; }
+
+  .card{ background:var(--parchment); border:1px solid var(--line); border-radius:12px; padding:24px; margin-bottom:22px; }
+  label{ display:block; font-size:0.82rem; font-weight:600; color:var(--espresso); margin-bottom:6px; }
+  input{
+    width:100%; padding:11px 13px; border-radius:6px; border:1px solid var(--line);
+    background:var(--cream); color:var(--ink); font-family:'Inter',sans-serif; font-size:0.92rem;
+    margin-bottom:14px;
+  }
+  input::placeholder{ color:var(--ink-soft); }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:11px 20px; border-radius:999px; font-weight:600; font-size:0.92rem;
+    text-decoration:none; border:1px solid transparent; cursor:pointer;
+    font-family:'Inter',sans-serif; width:100%;
+  }
+  .btn-primary{ background:var(--cherry-dark); color:var(--cream); }
+  .btn-ghost{ background:transparent; color:var(--espresso); border-color:var(--line); }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .hidden{ display:none !important; }
+
+  .org-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .org-head h2{ font-size:1.3rem; }
+  .plan-badge{
+    font-family:'IBM Plex Mono',monospace; font-size:0.7rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--ink-soft); border:1px solid var(--line);
+    border-radius:999px; padding:3px 10px;
+  }
+  .cap-bar-track{ height:8px; border-radius:999px; background:var(--cream); overflow:hidden; margin:14px 0 6px; }
+  .cap-bar-fill{ height:100%; background:var(--cherry-dark); border-radius:999px; transition:width .25s ease; }
+  .cap-label{ font-size:0.82rem; color:var(--ink-soft); }
+
+  .people-list{ list-style:none; margin:0; padding:0; }
+  .people-list li{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 0; border-bottom:1px solid var(--line); font-size:0.92rem;
+  }
+  .people-list li:last-child{ border-bottom:none; }
+  .people-list .p-email{ color:var(--ink-soft); font-size:0.85rem; }
+  .empty-note{ color:var(--ink-soft); font-size:0.88rem; padding:8px 0; }
+
+  .add-row{ display:flex; gap:10px; }
+  .add-row input{ margin-bottom:0; }
+  .add-row .btn{ width:auto; white-space:nowrap; }
+
+  #status-msg{ font-size:0.85rem; margin-top:10px; font-weight:500; }
+
+  /* ---------- PAYWALL MODAL ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(74,46,30,0.45);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:100;
+  }
+  .modal-card{
+    background:var(--cream); border-radius:16px; max-width:400px; width:100%;
+    padding:32px 28px; text-align:center; box-shadow:0 24px 60px -20px rgba(43,27,20,0.5);
+  }
+  .modal-card .cups{ font-size:2rem; margin-bottom:6px; }
+  .modal-card h2{ font-size:1.4rem; margin-bottom:10px; }
+  .modal-card p{ color:var(--ink-soft); font-size:0.92rem; margin:0 0 20px; }
+  .modal-tiers{ display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+  .modal-tier{
+    display:flex; justify-content:space-between; align-items:center;
+    border:1px solid var(--line); border-radius:10px; padding:12px 16px; text-align:left;
+  }
+  .modal-tier b{ display:block; font-family:'Bricolage Grotesque',sans-serif; font-size:1rem; color:var(--espresso); }
+  .modal-tier span{ font-size:0.78rem; color:var(--ink-soft); }
+  .modal-tier .amt{ font-family:'IBM Plex Mono',monospace; font-weight:600; color:var(--cherry-dark); }
+  .modal-actions{ display:flex; flex-direction:column; gap:10px; }
+  .modal-close{ background:none; border:none; color:var(--ink-soft); font-size:0.85rem; cursor:pointer; padding:4px; }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img src="assets/logo-full.png" alt="">Brew Buddies</a>
+  </div>
+</header>
+
+<main class="wrap">
+  <span class="eyebrow">Manage your group</span>
+  <h1>Who's in the draw?</h1>
+  <p class="lede">Load your group with the Organization ID and API key you got when you signed up, then add people one at a time.</p>
+
+  <div class="card" id="login-card">
+    <label for="f-org-id">Organization ID</label>
+    <input type="text" id="f-org-id" placeholder="org_xxxxxxxxxx">
+    <label for="f-api-key">API key</label>
+    <input type="text" id="f-api-key" placeholder="bb_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+    <button class="btn btn-primary" id="load-btn">Load my group</button>
+    <div id="login-msg" style="font-size:0.85rem; margin-top:10px; color:var(--berry-text);"></div>
+  </div>
+
+  <div id="group-view" class="hidden">
+    <div class="card">
+      <div class="org-head">
+        <h2 id="org-name">—</h2>
+        <span class="plan-badge" id="org-plan">—</span>
+      </div>
+      <div id="cap-wrap" class="hidden">
+        <div class="cap-bar-track"><div class="cap-bar-fill" id="cap-bar-fill" style="width:0%;"></div></div>
+        <div class="cap-label"><span id="cap-label-text">0 / 8</span> free spots used</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <label for="f-name">Name</label>
+      <input type="text" id="f-name" placeholder="Ada Lovelace">
+      <label for="f-email">Email</label>
+      <div class="add-row">
+        <input type="email" id="f-email" placeholder="ada@example.com">
+        <button class="btn btn-primary" id="add-btn">Add</button>
+      </div>
+      <div id="status-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:1.1rem; margin-bottom:14px;">People in the draw</h2>
+      <ul class="people-list" id="people-list"></ul>
+      <div class="empty-note hidden" id="empty-note">Nobody added yet — add your first person above.</div>
+    </div>
+  </div>
+</main>
+
+<div class="modal-backdrop hidden" id="paywall">
+  <div class="modal-card">
+    <div class="cups">☕☕☕</div>
+    <h2>Your Free table is full</h2>
+    <p>The Free plan tops out at 8 people. Upgrade to keep adding your group — bulk import, bigger tables, and recurring rounds come with it.</p>
+    <div class="modal-tiers">
+      <div class="modal-tier"><div><b>Plus</b><span>Up to 100 people</span></div><div class="amt">£29/mo</div></div>
+      <div class="modal-tier"><div><b>Community</b><span>100–249 people</span></div><div class="amt">£149/mo</div></div>
+      <div class="modal-tier"><div><b>Corporate</b><span>250+ people</span></div><div class="amt">£495/mo</div></div>
+    </div>
+    <div class="modal-actions">
+      <a href="index.html#pricing" class="btn btn-primary">See plans &amp; upgrade →</a>
+      <button class="modal-close" id="paywall-close">Not right now</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'https://brew-buddies-api.p-g-davis.workers.dev/v1';
+  const params = new URLSearchParams(location.search);
+  let orgId = params.get('org') || localStorage.getItem('bb_org_id') || '';
+  let apiKey = params.get('key') || localStorage.getItem('bb_api_key') || '';
+
+  const loginCard = document.getElementById('login-card');
+  const groupView = document.getElementById('group-view');
+  const loginMsg = document.getElementById('login-msg');
+  const statusMsg = document.getElementById('status-msg');
+  const paywall = document.getElementById('paywall');
+
+  document.getElementById('f-org-id').value = orgId;
+  document.getElementById('f-api-key').value = apiKey;
+
+  async function loadOrg() {
+    orgId = document.getElementById('f-org-id').value.trim();
+    apiKey = document.getElementById('f-api-key').value.trim();
+    if (!orgId || !apiKey) {
+      loginMsg.textContent = 'Enter both your Organization ID and API key.';
+      return;
+    }
+    loginMsg.textContent = 'Loading…';
+
+    const orgRes = await fetch(`${API_BASE}/organizations/${orgId}`);
+    if (!orgRes.ok) {
+      loginMsg.textContent = "Couldn't find that organization — check the ID.";
+      return;
+    }
+    const org = await orgRes.json();
+
+    const peopleRes = await fetch(`${API_BASE}/organizations/${orgId}/participants`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    if (!peopleRes.ok) {
+      loginMsg.textContent = "That API key doesn't match this organization.";
+      return;
+    }
+    const { participants } = await peopleRes.json();
+
+    localStorage.setItem('bb_org_id', orgId);
+    localStorage.setItem('bb_api_key', apiKey);
+
+    loginCard.classList.add('hidden');
+    groupView.classList.remove('hidden');
+    renderOrg(org, participants);
+  }
+
+  function renderOrg(org, participants) {
+    document.getElementById('org-name').textContent = org.name;
+    document.getElementById('org-plan').textContent = org.plan_tier;
+
+    const capWrap = document.getElementById('cap-wrap');
+    if (org.plan_tier === 'free') {
+      capWrap.classList.remove('hidden');
+      const cap = 8;
+      const count = participants.length;
+      document.getElementById('cap-bar-fill').style.width = Math.min(100, (count / cap) * 100) + '%';
+      document.getElementById('cap-label-text').textContent = `${count} / ${cap}`;
+    } else {
+      capWrap.classList.add('hidden');
+    }
+
+    const list = document.getElementById('people-list');
+    const emptyNote = document.getElementById('empty-note');
+    list.innerHTML = '';
+    if (participants.length === 0) {
+      emptyNote.classList.remove('hidden');
+    } else {
+      emptyNote.classList.add('hidden');
+      for (const p of participants) {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${p.name}</span><span class="p-email">${p.email}</span>`;
+        list.appendChild(li);
+      }
+    }
+  }
+
+  async function refreshPeople() {
+    const orgRes = await fetch(`${API_BASE}/organizations/${orgId}`);
+    const org = await orgRes.json();
+    const peopleRes = await fetch(`${API_BASE}/organizations/${orgId}/participants`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    const { participants } = await peopleRes.json();
+    renderOrg(org, participants);
+  }
+
+  async function addPerson() {
+    const name = document.getElementById('f-name').value.trim();
+    const email = document.getElementById('f-email').value.trim();
+    if (!name || !email) {
+      statusMsg.style.color = 'var(--berry-text)';
+      statusMsg.textContent = 'Name and email are both required.';
+      return;
+    }
+
+    statusMsg.style.color = 'var(--ink-soft)';
+    statusMsg.textContent = 'Adding…';
+
+    const res = await fetch(`${API_BASE}/organizations/${orgId}/participants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ name, email })
+    });
+
+    if (res.status === 402) {
+      statusMsg.textContent = '';
+      paywall.classList.remove('hidden');
+      return;
+    }
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      statusMsg.style.color = 'var(--berry-text)';
+      statusMsg.textContent = body.error || 'Something went wrong adding that person.';
+      return;
+    }
+
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-email').value = '';
+    statusMsg.style.color = 'var(--sage-text)';
+    statusMsg.textContent = 'Added!';
+    await refreshPeople();
+  }
+
+  document.getElementById('load-btn').addEventListener('click', loadOrg);
+  document.getElementById('add-btn').addEventListener('click', addPerson);
+  document.getElementById('paywall-close').addEventListener('click', () => paywall.classList.add('hidden'));
+
+  if (orgId && apiKey) loadOrg();
+</script>
+
+</body>
+</html>

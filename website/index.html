@@ -168,10 +168,10 @@
   .stub-foot{ position:absolute; bottom:14px; left:24px; right:24px; display:flex; justify-content:space-between; font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--ink-soft); }
 
   /* ---------- PRICING ---------- */
-  .pricing-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; align-items:stretch; }
+  .pricing-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:18px; align-items:stretch; }
   .price-ticket{
     background:var(--cream); border:1px solid var(--line); border-radius:12px;
-    padding:30px 26px; display:flex; flex-direction:column;
+    padding:26px 20px; display:flex; flex-direction:column;
     position:relative;
   }
   .price-ticket.featured{ border-color:var(--cherry); box-shadow:0 16px 32px -18px rgba(140,47,57,0.45); }
@@ -207,10 +207,14 @@
 
   footer{ padding:40px 28px; text-align:center; font-size:0.82rem; color:var(--ink-soft); background:var(--parchment); border-top:1px solid var(--line); }
 
+  @media (max-width:1000px){
+    .pricing-grid{ grid-template-columns:repeat(2,1fr); }
+  }
   @media (max-width:860px){
     .hero-grid{ grid-template-columns:1fr; }
     .hero h1{ font-size:2.3rem; }
-    .stubs, .pricing-grid{ grid-template-columns:1fr; }
+    .stubs{ grid-template-columns:1fr; }
+    .pricing-grid{ grid-template-columns:1fr; }
     nav.links{ display:none; }
     .final-cta{ margin:0 16px; padding:44px 24px; }
   }
@@ -228,7 +232,7 @@
       <a href="#who">Who it's for</a>
       <a href="#how">How it draws</a>
       <a href="#pricing">Pricing</a>
-      <a href="#start" class="btn btn-ghost">Sign in</a>
+      <a href="manage.html" class="btn btn-ghost">Sign in</a>
       <a href="#start" class="btn btn-primary">Start free →</a>
     </nav>
   </div>
@@ -351,7 +355,7 @@
       <div class="price-ticket featured">
         <div class="featured-flag">MOST DRAWN</div>
         <div class="price-name">Free</div>
-        <div class="price-amt">$0</div>
+        <div class="price-amt">£0</div>
         <div class="price-blurb">For a friend group, club, or cohort getting started — forever, not a trial.</div>
         <ul class="price-feats">
           <li>Add up to 8 people, one at a time</li>
@@ -363,11 +367,11 @@
       </div>
       <div class="price-ticket">
         <div class="price-name">Plus</div>
-        <div class="price-amt">$5<span>/mo</span></div>
-        <div class="price-blurb">For a group that's outgrown adding people by hand.</div>
+        <div class="price-amt">£29<span>/mo</span></div>
+        <div class="price-blurb">For a group that's outgrown adding people by hand — up to 100 people.</div>
         <ul class="price-feats">
           <li>Bulk import from Excel or Word</li>
-          <li>Up to 250 people, tables of 2–4</li>
+          <li>Up to 100 people, tables of 2–4</li>
           <li>Auto .ics invite, time set by you</li>
           <li>Recurring rounds — weekly to monthly</li>
         </ul>
@@ -375,15 +379,27 @@
       </div>
       <div class="price-ticket">
         <div class="price-name">Community</div>
-        <div class="price-amt">$29<span>/mo</span></div>
-        <div class="price-blurb">For alumni networks, coworking spaces, and companies that never bought a Slack workspace in the first place.</div>
+        <div class="price-amt">£149<span>/mo</span></div>
+        <div class="price-blurb">For alumni networks, coworking spaces, and companies — 100 to 249 people.</div>
         <ul class="price-feats">
-          <li>Unlimited people, unlimited rounds</li>
+          <li>Up to 249 people, unlimited rounds</li>
           <li>Optional video-call link on the invite</li>
           <li>Participation reporting</li>
           <li>Priority support, no sales call required</li>
         </ul>
         <a href="#start" class="btn btn-ghost btn-block">Start Community</a>
+      </div>
+      <div class="price-ticket">
+        <div class="price-name">Corporate</div>
+        <div class="price-amt">£495<span>/mo</span></div>
+        <div class="price-blurb">For big organizations running Brew Buddies company-wide — 250 people and up.</div>
+        <ul class="price-feats">
+          <li>250+ people, unlimited rounds</li>
+          <li>Optional video-call link on the invite</li>
+          <li>Participation reporting</li>
+          <li>Dedicated onboarding &amp; priority support</li>
+        </ul>
+        <a href="#start" class="btn btn-ghost btn-block">Start Corporate</a>
       </div>
     </div>
   </div>
@@ -463,8 +479,9 @@
       });
       if (!res.ok) throw new Error('API not reachable yet');
       const data = await res.json();
-      msg.textContent = `You're in — organization ${data.id} created. Check your email.`;
-      msg.style.color = '#F5B942';
+      const manageUrl = `manage.html?org=${encodeURIComponent(data.id)}&key=${encodeURIComponent(data.api_key)}`;
+      msg.innerHTML = `You're in — <strong>${data.id}</strong> created.<br>Save this API key, it won't be shown again: <span class="mono">${data.api_key}</span><br><a href="${manageUrl}" style="color:#F5B942; text-decoration:underline;">Add your people →</a>`;
+      msg.style.color = 'rgba(255,251,243,0.85)';
     } catch (err) {
       msg.textContent = 'API isn\'t deployed yet — this form is wired and ready for when it is.';
       msg.style.color = '#F5B942';
