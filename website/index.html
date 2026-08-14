@@ -63,6 +63,8 @@
   nav.links{ display:flex; align-items:center; gap:28px; }
   nav.links a{ text-decoration:none; font-size:0.94rem; color:var(--ink-soft); font-weight:500; }
   nav.links a:hover{ color:var(--espresso); }
+  nav.links a.btn-primary, nav.links a.btn-primary:hover{ color:var(--cream); }
+  nav.links a.btn-ghost, nav.links a.btn-ghost:hover{ color:var(--espresso); }
   .btn{
     display:inline-flex; align-items:center; gap:8px;
     padding:11px 20px; border-radius:999px;
@@ -358,8 +360,7 @@
       </div>
     </div>
     <div class="pricing-grid">
-      <div class="price-ticket featured">
-        <div class="featured-flag">MOST DRAWN</div>
+      <div class="price-ticket">
         <div class="price-name">Free</div>
         <div class="price-amt">£0</div>
         <div class="price-blurb">For a friend group, club, or cohort getting started — forever, not a trial.</div>
@@ -369,9 +370,10 @@
           <li>Email match notification</li>
           <li>You arrange your own time</li>
         </ul>
-        <a href="#start" class="btn btn-primary btn-block">Start free</a>
+        <a href="#start" class="btn btn-ghost btn-block">Start free</a>
       </div>
-      <div class="price-ticket">
+      <div class="price-ticket featured">
+        <div class="featured-flag">MOST DRAWN</div>
         <div class="price-name">Plus</div>
         <div class="price-amt price-interval-amt" data-month-amt="£29" data-month-suffix="/mo" data-year-amt="£290" data-year-suffix="/yr">£29<span>/mo</span></div>
         <div class="price-blurb">For a group that's outgrown adding people by hand — up to 100 people.</div>
@@ -381,7 +383,7 @@
           <li>Auto .ics invite, time set by you</li>
           <li>Recurring rounds — weekly to monthly</li>
         </ul>
-        <a href="#start" class="btn btn-ghost btn-block">Start Plus</a>
+        <button type="button" class="btn btn-primary btn-block pricing-upgrade-btn" data-tier="plus">Start Plus →</button>
       </div>
       <div class="price-ticket">
         <div class="price-name">Community</div>
@@ -393,7 +395,7 @@
           <li>Participation reporting</li>
           <li>Priority support, no sales call required</li>
         </ul>
-        <a href="#start" class="btn btn-ghost btn-block">Start Community</a>
+        <button type="button" class="btn btn-ghost btn-block pricing-upgrade-btn" data-tier="community">Start Community →</button>
       </div>
       <div class="price-ticket">
         <div class="price-name">Corporate</div>
@@ -405,9 +407,10 @@
           <li>Participation reporting</li>
           <li>Dedicated onboarding &amp; priority support</li>
         </ul>
-        <a href="#start" class="btn btn-ghost btn-block">Start Corporate</a>
+        <button type="button" class="btn btn-ghost btn-block pricing-upgrade-btn" data-tier="corporate">Start Corporate →</button>
       </div>
     </div>
+    <p id="pricing-msg" style="text-align:center; font-size:0.85rem; color:var(--berry-text); margin-top:16px; min-height:1.2em;"></p>
   </div>
 </section>
 
@@ -440,9 +443,13 @@
   document.getElementById('year').textContent = new Date().getFullYear();
 
   // Pricing section: monthly / yearly toggle (Plus, Community, Corporate).
+  const API_BASE_PRICING = 'https://brew-buddies-api.p-g-davis.workers.dev/v1';
+  let selectedPricingInterval = 'month';
+
   document.querySelectorAll('.price-interval-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const interval = btn.dataset.interval;
+      selectedPricingInterval = interval;
       document.querySelectorAll('.price-interval-btn').forEach((b) => {
         const on = b.dataset.interval === interval;
         b.style.background = on ? 'var(--cherry-dark)' : 'transparent';
@@ -453,6 +460,44 @@
         const suffix = interval === 'year' ? el.dataset.yearSuffix : el.dataset.monthSuffix;
         el.innerHTML = `${amt}<span>${suffix}</span>`;
       });
+    });
+  });
+
+  // Paid tier buttons: if this browser already has a group (saved from a
+  // previous free signup), jump straight to Stripe Checkout for it. If not,
+  // there's no org yet to attach a subscription to — send them to the free
+  // signup form first, since every paid plan starts from a free group.
+  document.querySelectorAll('.pricing-upgrade-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const pricingMsg = document.getElementById('pricing-msg');
+      const savedOrgId = localStorage.getItem('bb_org_id');
+      const savedApiKey = localStorage.getItem('bb_api_key');
+
+      if (!savedOrgId || !savedApiKey) {
+        pricingMsg.style.color = 'var(--ink-soft)';
+        pricingMsg.textContent = "You'll need a free group first — drop your details below, then come back here to upgrade.";
+        document.getElementById('start').scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+
+      pricingMsg.style.color = 'var(--ink-soft)';
+      pricingMsg.textContent = 'Taking you to checkout…';
+
+      const res = await fetch(`${API_BASE_PRICING}/organizations/${savedOrgId}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${savedApiKey}` },
+        body: JSON.stringify({ tier: btn.dataset.tier, interval: selectedPricingInterval })
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        pricingMsg.style.color = 'var(--berry-text)';
+        pricingMsg.textContent = body.error || 'Could not start checkout — try again in a moment.';
+        return;
+      }
+
+      const { checkout_url } = await res.json();
+      window.location.href = checkout_url;
     });
   });
 
@@ -502,6 +547,8 @@
       });
       if (!res.ok) throw new Error('API not reachable yet');
       const data = await res.json();
+      localStorage.setItem('bb_org_id', data.id);
+      localStorage.setItem('bb_api_key', data.api_key);
       const manageUrl = `manage.html?org=${encodeURIComponent(data.id)}&key=${encodeURIComponent(data.api_key)}`;
       msg.innerHTML = `You're in — <strong>${data.id}</strong> created.<br>Save this API key, it won't be shown again: <span class="mono">${data.api_key}</span><br><a href="${manageUrl}" style="color:#F5B942; text-decoration:underline;">Add your people →</a>`;
       msg.style.color = 'rgba(255,251,243,0.85)';
