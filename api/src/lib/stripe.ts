@@ -7,19 +7,20 @@ export type Interval = 'month' | 'year';
 
 /** Flat-rate pricing: Plus, Community, and Corporate each have a monthly
  * and a yearly price on the same Stripe product (yearly = 10x monthly,
- * i.e. ~2 months free) — same pattern as Stripe's flat-rate pricing guide. */
+ * i.e. ~2 months free) — same pattern as Stripe's flat-rate pricing guide.
+ * Live-mode price IDs (real payments). */
 export const TIER_PRICE_IDS: Record<Tier, Record<Interval, string>> = {
   plus: {
-    month: 'price_1U47THIgiAIZiKh9JehuVNke',
-    year: 'price_1U47xuIgiAIZiKh9c0VrJHoD',
+    month: 'price_1U4ErnIHfVPWqiCKAbcn1vpn',
+    year: 'price_1U4EroIHfVPWqiCKqNyDs1dq',
   },
   community: {
-    month: 'price_1U47TIIgiAIZiKh9Dp7LUpoD',
-    year: 'price_1U47xuIgiAIZiKh9b5DjWu2i',
+    month: 'price_1U4EroIHfVPWqiCK1qUguGmV',
+    year: 'price_1U4ErpIHfVPWqiCKHRAh96lh',
   },
   corporate: {
-    month: 'price_1U47TJIgiAIZiKh9mHgbeeXn',
-    year: 'price_1U47xvIgiAIZiKh9Lf2nNEho',
+    month: 'price_1U4ErqIHfVPWqiCKHGwUq2di',
+    year: 'price_1U4ErqIHfVPWqiCKAOBFHYXS',
   },
 };
 
