@@ -88,12 +88,23 @@ export function buildGroups(
   }
 
   // Fold a lone leftover into the previous group rather than leaving a
-  // group of 1.
+  // group of 1. If the previous group is already at the 4-person cap
+  // (e.g. 41 people at targetSize 4 leaves a remainder of 1), merging
+  // would overflow it to 5 — borrow one member from it instead so both
+  // groups land in [2,4].
   const last = groups[groups.length - 1];
   if (groups.length > 1 && last.participantIds.length === 1) {
-    groups[groups.length - 2].participantIds.push(...last.participantIds);
-    groups[groups.length - 2].sizeReason = 'large_group_pod';
-    groups.pop();
+    const prev = groups[groups.length - 2];
+    if (prev.participantIds.length < 4) {
+      prev.participantIds.push(...last.participantIds);
+      prev.sizeReason = 'large_group_pod';
+      groups.pop();
+    } else {
+      const borrowed = prev.participantIds.pop()!;
+      last.participantIds.push(borrowed);
+      last.sizeReason = 'odd_remainder';
+      prev.sizeReason = 'odd_remainder';
+    }
   }
 
   return groups;
