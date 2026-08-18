@@ -26,7 +26,7 @@ export async function createOrganization(request: Request, env: Env): Promise<Re
       body.name,
       type,
       body.timezone || 'UTC',
-      body.meeting_duration_minutes || 30,
+      30, // fixed — it's a coffee, not a meeting; not client-configurable
       body.meeting_time || '10:00',
       body.match_frequency || 'manual',
       apiKey,
@@ -65,9 +65,10 @@ export async function updateOrganization(orgId: string, request: Request, env: E
   const body = await request.json<Record<string, any>>().catch(() => null);
   if (!body) return errorResponse('invalid body');
 
+  // meeting_duration_minutes is deliberately absent — fixed at 30, not
+  // client-configurable. It's a coffee, not a meeting.
   const fields = [
     'plan_tier',
-    'meeting_duration_minutes',
     'meeting_time',
     'match_frequency',
     'repeat_cooldown_rounds',

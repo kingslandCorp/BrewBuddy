@@ -197,16 +197,9 @@
     <div class="card">
       <h2 style="font-size:1.1rem; margin-bottom:6px;">Draw settings</h2>
       <p class="tile-desc" style="margin-bottom:16px;">What time each table meets, and how often a new draw happens automatically.</p>
-      <div class="add-tiles" style="grid-template-columns:1fr 1fr; margin-bottom:0;">
-        <div>
-          <label for="f-meeting-time">Meeting time</label>
-          <input type="time" id="f-meeting-time">
-        </div>
-        <div>
-          <label for="f-duration">Duration (minutes)</label>
-          <input type="number" id="f-duration" min="10" max="180" step="5">
-        </div>
-      </div>
+      <label for="f-meeting-time">Meeting time</label>
+      <input type="time" id="f-meeting-time">
+      <p class="tile-desc" style="margin-top:-6px;">Every table is fixed at 30 minutes — it's a coffee, not a meeting.</p>
       <label for="f-frequency">Run automatically</label>
       <select id="f-frequency" style="width:100%; padding:11px 13px; border-radius:6px; border:1px solid var(--line); background:var(--cream); color:var(--ink); font-family:'Inter',sans-serif; font-size:0.92rem; margin-bottom:14px;">
         <option value="manual">Manual — I'll click "Run today's draw" myself</option>
@@ -305,7 +298,6 @@
     document.getElementById('org-name').textContent = org.name;
     document.getElementById('org-plan').textContent = org.plan_tier;
     document.getElementById('f-meeting-time').value = org.meeting_time || '10:00';
-    document.getElementById('f-duration').value = org.meeting_duration_minutes || 30;
     document.getElementById('f-frequency').value = org.match_frequency || 'manual';
 
     const capWrap = document.getElementById('cap-wrap');
@@ -496,12 +488,11 @@
   async function saveSettings() {
     const settingsMsg = document.getElementById('settings-msg');
     const meeting_time = document.getElementById('f-meeting-time').value;
-    const meeting_duration_minutes = parseInt(document.getElementById('f-duration').value, 10);
     const match_frequency = document.getElementById('f-frequency').value;
 
-    if (!meeting_time || !meeting_duration_minutes) {
+    if (!meeting_time) {
       settingsMsg.style.color = 'var(--berry-text)';
-      settingsMsg.textContent = 'Set a meeting time and duration first.';
+      settingsMsg.textContent = 'Set a meeting time first.';
       return;
     }
 
@@ -511,7 +502,7 @@
     const res = await fetch(`${API_BASE}/organizations/${orgId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-      body: JSON.stringify({ meeting_time, meeting_duration_minutes, match_frequency })
+      body: JSON.stringify({ meeting_time, match_frequency })
     });
 
     if (!res.ok) {
