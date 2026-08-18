@@ -54,3 +54,34 @@ ${videoLine}
   }
   return { ok: true };
 }
+
+/** Sent only to an organization's on-file owner_email — never to an
+ * address supplied by whoever is asking. */
+export async function sendPasscodeResetEmail(
+  apiKey: string,
+  to: string,
+  orgName: string,
+  newPasscode: string
+): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: `Brew Buddies <support@brew-buddies.com>`,
+      to: [to],
+      subject: `☕ New passcode for ${orgName}`,
+      html: `<p>Here's a new passcode for <strong>${orgName}</strong> on Brew Buddies:</p>
+<p style="font-family:monospace; font-size:1.2em; background:#FFF6E9; padding:12px 16px; border-radius:6px; display:inline-block;">${newPasscode}</p>
+<p>Your old passcode no longer works. If you didn't request this, someone else may have your group's name — reply to this email and we'll help.</p>`,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    return { ok: false, error: `Resend ${res.status}: ${body}` };
+  }
+  return { ok: true };
+}

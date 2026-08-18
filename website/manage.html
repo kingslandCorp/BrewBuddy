@@ -135,15 +135,23 @@
 <main class="wrap">
   <span class="eyebrow">Manage your group</span>
   <h1>Who's in the draw?</h1>
-  <p class="lede">Load your group with the Organization ID and API key you got when you signed up, then add people one at a time.</p>
+  <p class="lede">Load your group with its name and passcode from when you signed up, then add people one at a time.</p>
 
   <div class="card" id="login-card">
-    <label for="f-org-id">Organization ID</label>
-    <input type="text" id="f-org-id" placeholder="org_xxxxxxxxxx">
-    <label for="f-api-key">API key</label>
-    <input type="text" id="f-api-key" placeholder="bb_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+    <label for="f-org-name">Group name</label>
+    <input type="text" id="f-org-name" placeholder="The Coffee Crew">
+    <label for="f-passcode">Passcode</label>
+    <input type="password" id="f-passcode" placeholder="bb_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
     <button class="btn btn-primary" id="load-btn">Load my group</button>
+    <button type="button" id="forgot-passcode-link" style="background:none; border:none; color:var(--ink-soft); font-size:0.82rem; cursor:pointer; padding:8px 0 0; text-decoration:underline;">Forgot your passcode?</button>
     <div id="login-msg" style="font-size:0.85rem; margin-top:10px; color:var(--berry-text);"></div>
+
+    <div id="forgot-panel" class="hidden" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--line);">
+      <label for="f-forgot-name">Group name</label>
+      <input type="text" id="f-forgot-name" placeholder="The Coffee Crew">
+      <button class="btn btn-ghost" id="forgot-submit-btn">Email a new passcode</button>
+      <div id="forgot-msg" style="font-size:0.85rem; margin-top:10px; font-weight:500;"></div>
+    </div>
   </div>
 
   <div id="group-view" class="hidden">
@@ -219,6 +227,10 @@
       <div id="draw-results" class="hidden" style="margin-top:18px;"></div>
     </div>
   </div>
+
+  <div style="text-align:center; margin-top:32px;">
+    <a href="mailto:support@brew-buddies.com" style="display:inline-flex; align-items:center; gap:6px; padding:8px 18px; border-radius:999px; border:1px solid var(--line); background:var(--parchment); color:var(--ink-soft); font-size:0.85rem; text-decoration:none;">Need help? support@brew-buddies.com</a>
+  </div>
 </main>
 
 <div class="modal-backdrop hidden" id="paywall">
@@ -231,9 +243,9 @@
       <button type="button" class="interval-btn" data-interval="year" style="border:none; background:transparent; color:var(--ink-soft); padding:6px 16px; border-radius:999px; font-size:0.8rem; font-weight:600; cursor:pointer;">Yearly — 2 months free</button>
     </div>
     <div class="modal-tiers">
-      <button class="modal-tier upgrade-btn" data-tier="plus" data-month="£29/mo" data-year="£290/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Plus</b><span>Up to 100 people</span></div><div class="amt">£29/mo →</div></button>
-      <button class="modal-tier upgrade-btn" data-tier="community" data-month="£149/mo" data-year="£1490/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Community</b><span>100–249 people</span></div><div class="amt">£149/mo →</div></button>
-      <button class="modal-tier upgrade-btn" data-tier="corporate" data-month="£495/mo" data-year="£4950/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Corporate</b><span>250+ people</span></div><div class="amt">£495/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="plus" data-month="£29/mo" data-year="£290/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Plus</b><span>Up to 50 people</span></div><div class="amt">£29/mo →</div></button>
+      <button class="modal-tier upgrade-btn" data-tier="community" data-month="£149/mo" data-year="£1490/yr" style="cursor:pointer; width:100%; font:inherit; text-align:left;"><div><b>Community</b><span>51–149 people</span></div><div class="amt">£149/mo →</div></button>
+      <a href="mailto:hello@brew-buddies.com?subject=Corporate%20plan%20inquiry" class="modal-tier" style="width:100%; font:inherit; text-align:left; text-decoration:none; display:block;"><div><b>Corporate</b><span>150+ people</span></div><div class="amt">Contact us →</div></a>
     </div>
     <div class="modal-actions">
       <div id="paywall-msg" style="font-size:0.82rem; color:var(--berry-text); min-height:1.2em;"></div>
@@ -255,21 +267,24 @@
   const paywall = document.getElementById('paywall');
   let selectedInterval = 'month';
 
-  document.getElementById('f-org-id').value = orgId;
-  document.getElementById('f-api-key').value = apiKey;
+  async function finishLogin(org, participants) {
+    localStorage.setItem('bb_org_id', orgId);
+    localStorage.setItem('bb_api_key', apiKey);
 
-  async function loadOrg() {
-    orgId = document.getElementById('f-org-id').value.trim();
-    apiKey = document.getElementById('f-api-key').value.trim();
-    if (!orgId || !apiKey) {
-      loginMsg.textContent = 'Enter both your Organization ID and API key.';
-      return;
-    }
+    loginCard.classList.add('hidden');
+    groupView.classList.remove('hidden');
+    renderOrg(org, participants);
+  }
+
+  // Returning visitor with a saved session (URL params from the signup
+  // redirect, or localStorage from last time) — skip straight past the
+  // name+passcode form.
+  async function loadOrgById() {
     loginMsg.textContent = 'Loading…';
 
     const orgRes = await fetch(`${API_BASE}/organizations/${orgId}`);
     if (!orgRes.ok) {
-      loginMsg.textContent = "Couldn't find that organization — check the ID.";
+      loginMsg.textContent = "Couldn't load your saved group — try logging in with its name and passcode below.";
       return;
     }
     const org = await orgRes.json();
@@ -278,17 +293,42 @@
       headers: { Authorization: `Bearer ${apiKey}` }
     });
     if (!peopleRes.ok) {
-      loginMsg.textContent = "That API key doesn't match this organization.";
+      loginMsg.textContent = "Your saved passcode no longer works — log in with its name and passcode below.";
       return;
     }
     const { participants } = await peopleRes.json();
+    await finishLogin(org, participants);
+  }
 
-    localStorage.setItem('bb_org_id', orgId);
-    localStorage.setItem('bb_api_key', apiKey);
+  // Manual entry: group name + passcode.
+  async function loadOrg() {
+    const name = document.getElementById('f-org-name').value.trim();
+    const passcode = document.getElementById('f-passcode').value.trim();
+    if (!name || !passcode) {
+      loginMsg.textContent = 'Enter both your group name and passcode.';
+      return;
+    }
+    loginMsg.textContent = 'Loading…';
 
-    loginCard.classList.add('hidden');
-    groupView.classList.remove('hidden');
-    renderOrg(org, participants);
+    const loginRes = await fetch(`${API_BASE}/organizations/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, passcode })
+    });
+    if (!loginRes.ok) {
+      const body = await loginRes.json().catch(() => ({}));
+      loginMsg.textContent = body.error || "Couldn't find that group — check the name and passcode.";
+      return;
+    }
+    const org = await loginRes.json();
+    orgId = org.id;
+    apiKey = passcode;
+
+    const peopleRes = await fetch(`${API_BASE}/organizations/${orgId}/participants`, {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    const { participants } = await peopleRes.json();
+    await finishLogin(org, participants);
   }
 
   let currentOrg = null;
@@ -599,6 +639,32 @@
   }
 
   document.getElementById('load-btn').addEventListener('click', loadOrg);
+  document.getElementById('forgot-passcode-link').addEventListener('click', () => {
+    const forgotPanel = document.getElementById('forgot-panel');
+    forgotPanel.classList.toggle('hidden');
+    if (!forgotPanel.classList.contains('hidden')) {
+      document.getElementById('f-forgot-name').value = document.getElementById('f-org-name').value;
+    }
+  });
+  document.getElementById('forgot-submit-btn').addEventListener('click', async () => {
+    const forgotMsg = document.getElementById('forgot-msg');
+    const name = document.getElementById('f-forgot-name').value.trim();
+    if (!name) {
+      forgotMsg.style.color = 'var(--berry-text)';
+      forgotMsg.textContent = 'Enter your group name first.';
+      return;
+    }
+    forgotMsg.style.color = 'var(--ink-soft)';
+    forgotMsg.textContent = 'Sending…';
+    const res = await fetch(`${API_BASE}/organizations/forgot-passcode`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    const body = await res.json().catch(() => ({}));
+    forgotMsg.style.color = 'var(--sage-text)';
+    forgotMsg.textContent = body.message || "If we found a group with that name, we've emailed a new passcode to the address on file.";
+  });
   document.getElementById('add-btn').addEventListener('click', addPerson);
   document.getElementById('import-btn').addEventListener('click', importRoster);
   document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
@@ -625,7 +691,7 @@
     });
   });
 
-  if (orgId && apiKey) loadOrg();
+  if (orgId && apiKey) loadOrgById();
 </script>
 
 </body>

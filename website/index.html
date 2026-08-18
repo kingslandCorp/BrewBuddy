@@ -431,10 +431,10 @@
         <div class="featured-flag">MOST DRAWN</div>
         <div class="price-name">Plus</div>
         <div class="price-amt price-interval-amt" data-month-amt="£29" data-month-suffix="/mo" data-year-amt="£290" data-year-suffix="/yr">£29<span>/mo</span></div>
-        <div class="price-blurb">For a group that's outgrown adding people by hand — up to 100 people.</div>
+        <div class="price-blurb">For a group that's outgrown adding people by hand — up to 50 people.</div>
         <ul class="price-feats">
           <li>Bulk import from Excel or Word</li>
-          <li>Up to 100 people, tables of 2–4</li>
+          <li>Up to 50 people, tables of 2–4</li>
           <li>Auto .ics invite, time set by you</li>
           <li>Recurring rounds — weekly to monthly</li>
         </ul>
@@ -443,9 +443,9 @@
       <div class="price-ticket">
         <div class="price-name">Community</div>
         <div class="price-amt price-interval-amt" data-month-amt="£149" data-month-suffix="/mo" data-year-amt="£1490" data-year-suffix="/yr">£149<span>/mo</span></div>
-        <div class="price-blurb">For alumni networks, coworking spaces, and companies — 100 to 249 people.</div>
+        <div class="price-blurb">For alumni networks, coworking spaces, and companies — 51 to 149 people.</div>
         <ul class="price-feats">
-          <li>Up to 249 people, unlimited rounds</li>
+          <li>Up to 149 people, unlimited rounds</li>
           <li>Optional video-call link on the invite</li>
           <li>Participation reporting</li>
           <li>Priority support, no sales call required</li>
@@ -455,9 +455,9 @@
       <div class="price-ticket">
         <div class="price-name">Corporate</div>
         <div class="price-amt">POA<span>/mo</span></div>
-        <div class="price-blurb">For big organizations running Brew Buddies company-wide — 250 people and up.</div>
+        <div class="price-blurb">For big organizations running Brew Buddies company-wide — 150 people and up.</div>
         <ul class="price-feats">
-          <li>250+ people, unlimited rounds</li>
+          <li>150+ people, unlimited rounds</li>
           <li>Optional video-call link on the invite</li>
           <li>Participation reporting</li>
           <li>Dedicated onboarding &amp; priority support</li>
@@ -627,8 +627,7 @@
           name: org,
           type: 'friend_group',
           owner_name: name,
-          owner_email: email,
-          meeting_duration_minutes: 30
+          owner_email: email
         })
       });
       if (!res.ok) throw new Error('API not reachable yet');
@@ -636,7 +635,7 @@
       localStorage.setItem('bb_org_id', data.id);
       localStorage.setItem('bb_api_key', data.api_key);
       const manageUrl = `manage.html?org=${encodeURIComponent(data.id)}&key=${encodeURIComponent(data.api_key)}`;
-      msg.innerHTML = `You're in — <strong>${data.id}</strong> created.<br>Save this API key, it won't be shown again: <span class="mono">${data.api_key}</span><br><a href="${manageUrl}" style="color:#F5B942; text-decoration:underline;">Add your people →</a>`;
+      msg.innerHTML = `You're in — <strong>${org}</strong> created.<br>Save this passcode, it won't be shown again: <span class="mono">${data.api_key}</span><br>You'll log back in with your group name and this passcode.<br><a href="${manageUrl}" style="color:#F5B942; text-decoration:underline;">Add your people →</a>`;
       msg.style.color = 'rgba(255,251,243,0.85)';
     } catch (err) {
       msg.textContent = 'API isn\'t deployed yet — this form is wired and ready for when it is.';

@@ -1,5 +1,5 @@
 import { errorResponse, json, authenticate } from './lib/db';
-import { createOrganization, getOrganization, updateOrganization, Env } from './routes/organizations';
+import { createOrganization, getOrganization, updateOrganization, loginOrganization, forgotPasscode, Env } from './routes/organizations';
 import { addParticipant, listParticipants, importParticipants } from './routes/participants';
 import { triggerRound } from './routes/rounds';
 import { getGroup, generateInvite } from './routes/groups';
@@ -39,6 +39,14 @@ export default {
       // POST /v1/organizations — no auth required, this is the entry point.
       if (path === '/v1/organizations' && method === 'POST') {
         return await createOrganization(request, env);
+      }
+
+      // Group name + passcode, in place of org ID + API key.
+      if (path === '/v1/organizations/login' && method === 'POST') {
+        return await loginOrganization(request, env);
+      }
+      if (path === '/v1/organizations/forgot-passcode' && method === 'POST') {
+        return await forgotPasscode(request, env);
       }
 
       const orgMatch = path.match(/^\/v1\/organizations\/([^/]+)(\/.*)?$/);
