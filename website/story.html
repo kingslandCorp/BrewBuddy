@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brew Buddies — Our story</title>
+<meta name="description" content="Why Brew Buddies exists — a coffee-roulette tool built out of lockdown isolation, an autism diagnosis, and staying connected to the people who matter.">
+<link rel="icon" type="image/png" href="assets/logo-full.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --espresso:#4A2E1E; --parchment:#FFF6E9; --cherry:#E4693D; --cherry-dark:#C1502A;
+    --cream:#FFFBF3; --gold:#F5B942; --sage:#9DBEA0; --sage-text:#4E6E54;
+    --berry:#E8567A; --berry-text:#B8365A; --ink:#4A2E1E; --ink-soft:#8A6A54;
+    --line: rgba(74,46,30,0.14); --radius: 4px; --sage-tint:#EBF2EC;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; background:var(--cream); color:var(--ink);
+    font-family:'Inter',sans-serif; line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,.display{ font-family:'Bricolage Grotesque',sans-serif; font-weight:700; letter-spacing:-0.01em; color:var(--espresso); margin:0; }
+  .mono{ font-family:'IBM Plex Mono',monospace; letter-spacing:0.02em; }
+  a{ color:inherit; }
+  .wrap{ max-width:1120px; margin:0 auto; padding:0 28px; }
+  :focus-visible{ outline:2px solid var(--cherry); outline-offset:3px; }
+
+  header.nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(255,246,233,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{ max-width:1120px; margin:0 auto; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; }
+  .logo{ display:flex; align-items:center; gap:9px; font-family:'Bricolage Grotesque',sans-serif; font-weight:700; font-size:1.18rem; color:var(--espresso); text-decoration:none; }
+  .logo-mark{ width:36px; height:36px; display:block; }
+  nav.links{ display:flex; align-items:center; gap:28px; }
+  nav.links a{ text-decoration:none; font-size:0.94rem; color:var(--ink-soft); font-weight:500; }
+  nav.links a.active{ color:var(--espresso); font-weight:600; }
+  nav.links a:hover{ color:var(--espresso); }
+  nav.links a.btn-primary, nav.links a.btn-primary:hover{ color:var(--cream); }
+  nav.links a.btn-ghost, nav.links a.btn-ghost:hover{ color:var(--espresso); }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:999px;
+    font-weight:600; font-size:0.92rem; text-decoration:none; border:1px solid transparent;
+    cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; font-family:'Inter',sans-serif;
+  }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ background:var(--cherry-dark); color:var(--cream); box-shadow:0 2px 0 #9C3F1E; }
+  .btn-primary:hover{ box-shadow:0 4px 10px rgba(140,47,57,0.35); }
+  .btn-ghost{ background:transparent; color:var(--espresso); border-color:var(--line); }
+  .btn-ghost:hover{ background:rgba(157,190,160,0.16); border-color:rgba(157,190,160,0.5); }
+
+  .story-hero{ padding:56px 0 8px; max-width:760px; margin:0 auto; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace;
+    font-size:0.76rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--sage-text);
+    font-weight:600; margin-bottom:18px;
+  }
+  .eyebrow::before{ content:'●'; font-size:0.6rem; }
+  .story-hero h1{ font-size:2.6rem; line-height:1.12; margin-bottom:20px; }
+  .story-hero .lede{ font-size:1.1rem; color:var(--ink-soft); }
+
+  .story-photo{ padding:32px 0 0; }
+  .story-photo img{
+    width:100%; max-width:760px; margin:0 auto; display:block;
+    height:320px; object-fit:cover; border-radius:14px; border:1px solid var(--line);
+  }
+
+  .story-body{ max-width:680px; margin:0 auto; padding:44px 0 20px; }
+  .story-body p{ font-size:1.08rem; color:var(--ink); margin:0 0 26px; }
+  .story-body p:last-child{ margin-bottom:0; }
+  .story-signoff{ max-width:680px; margin:0 auto; padding:8px 0 8px; }
+  .signature{ display:block; font-family:'Caveat',cursive; font-weight:700; font-size:3.2rem; color:var(--espresso); line-height:1; }
+  .signature-printed{ display:block; font-family:'Inter',sans-serif; font-weight:600; font-size:0.95rem; color:var(--espresso); margin-top:6px; }
+  .signature-title{ display:block; font-family:'IBM Plex Mono',monospace; font-size:0.76rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft); margin-top:2px; }
+  .signature-note{ display:block; font-family:'Inter',sans-serif; font-size:0.95rem; color:var(--ink-soft); margin-top:16px; }
+
+  .story-cta{
+    background:var(--sage-tint); border-radius:18px; margin:56px 28px 0; padding:48px 40px;
+    text-align:center;
+  }
+  .story-cta h2{ font-size:1.7rem; margin-bottom:12px; }
+  .story-cta p{ color:var(--ink-soft); max-width:440px; margin:0 auto 26px; }
+
+  footer{ padding:40px 28px; text-align:center; font-size:0.82rem; color:var(--ink-soft); background:var(--parchment); border-top:1px solid var(--line); margin-top:64px; }
+
+  @media (max-width:640px){
+    nav.links{ display:none; }
+    .story-hero h1{ font-size:2rem; }
+    .story-photo img{ height:200px; }
+    .story-body p{ font-size:1rem; }
+    .story-cta{ margin:44px 16px 0; padding:36px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><img class="logo-mark" src="assets/logo-full.png" alt="">Brew Buddies</a>
+    <nav class="links">
+      <a href="index.html#who">Who it's for</a>
+      <a href="index.html#how">How it draws</a>
+      <a href="index.html#pricing">Pricing</a>
+      <a href="story.html" class="active">Our story</a>
+      <a href="manage.html" class="btn btn-ghost">Sign in</a>
+      <a href="index.html#start" class="btn btn-primary">Start free →</a>
+    </nav>
+  </div>
+</header>
+
+<section class="story-hero">
+  <div class="wrap">
+    <span class="eyebrow">Our story</span>
+    <h1>Why Brew Buddies exists.</h1>
+    <p class="lede">It didn't start as a business idea. It started as something much smaller and much more personal — a way to stay connected when connection was hard to come by.</p>
+  </div>
+</section>
+
+<div class="story-photo">
+  <img src="assets/coffee-two-friends.jpg" alt="Two friends chatting over coffee outdoors">
+</div>
+
+<section class="story-body">
+  <div class="wrap">
+    <p>Brew Buddies started during the COVID lockdown, when I found myself in a not-great mental place. That period eventually led to my diagnosis of autism — something that reframed a lot about how I understand connection, and why getting it right matters so much to me.</p>
+
+    <p>When the lockdown eased, I put the idea on hold. Everyone was focused on getting back to their day jobs, and it felt like the wrong moment for it. But something didn't add up: people weren't really returning to the office, and even as restrictions lifted, we stayed distant. Physically closer to normal, maybe, but not more connected.</p>
+
+    <p>So I came back to it — this time with my own mental health as the starting point. The goal was simple: build a space where any group, whoever they are, can come together without needing a company Slack, a Teams license, or a Zoom account standing between them. Just people, and a reason to talk a bit more.</p>
+
+    <p>More recently, my father passed away. That's where the idea really crystallised — the need to stay connected across distance, with the people who actually matter, whether that's a coffee with an old friend or just an easy excuse to check in. Brew Buddies is what came out of that.</p>
+  </div>
+</section>
+
+<div class="story-signoff wrap">
+  <span class="signature">Pedro</span>
+  <span class="signature-printed">Pedro</span>
+  <span class="signature-title">Founder, Brew Buddies</span>
+  <span class="signature-note">If you're feeling a little isolated, I hope this helps you reconnect with someone.</span>
+</div>
+
+<section class="story-cta">
+  <h2>Draw your first table.</h2>
+  <p>No workspace, no admin approval, no sales call — just you and the people you want to stay close to.</p>
+  <a href="index.html#start" class="btn btn-primary">Start your first draw →</a>
+</section>
+
+<footer>
+  <div class="wrap" style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px 24px;">
+    <span style="display:flex; align-items:center; gap:10px;">
+      <img src="assets/logo-dark.png" alt="" style="width:20px; height:auto;">
+      © <span id="year"></span> Brew Buddies — Good people. Great connections.
+    </span>
+    <a href="mailto:hello@brew-buddies.com" style="color:var(--cherry-dark); font-weight:600; text-decoration:none;">Contact us →</a>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+
+</body>
+</html>
