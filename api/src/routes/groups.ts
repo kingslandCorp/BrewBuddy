@@ -127,6 +127,7 @@ export async function generateInvite(groupId: string, env: Env): Promise<Respons
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `attachment; filename="brew-buddies-${groupId}.ics"`,
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Expose-Headers': 'X-Email-Status',
       'X-Email-Status': emailStatus,
     },
   });

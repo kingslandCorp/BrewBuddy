@@ -68,6 +68,10 @@
   .cap-bar-fill{ height:100%; background:var(--cherry-dark); border-radius:999px; transition:width .25s ease; }
   .cap-label{ font-size:0.82rem; color:var(--ink-soft); }
 
+  .draw-group{ background:var(--cream); border:1px solid var(--line); border-radius:10px; padding:14px 16px; margin-bottom:10px; }
+  .draw-group:last-child{ margin-bottom:0; }
+  .draw-group-head{ display:flex; justify-content:space-between; align-items:center; font-family:'IBM Plex Mono',monospace; font-size:0.78rem; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; }
+  .draw-group-names{ font-size:0.95rem; color:var(--ink); margin-top:6px; font-weight:500; }
   .people-list{ list-style:none; margin:0; padding:0; }
   .people-list li{
     display:flex; justify-content:space-between; align-items:center;
@@ -189,6 +193,38 @@
       <ul class="people-list" id="people-list"></ul>
       <div class="empty-note hidden" id="empty-note">Nobody added yet — add your first person above.</div>
     </div>
+
+    <div class="card">
+      <h2 style="font-size:1.1rem; margin-bottom:6px;">Draw settings</h2>
+      <p class="tile-desc" style="margin-bottom:16px;">What time each table meets, and how often a new draw happens automatically.</p>
+      <div class="add-tiles" style="grid-template-columns:1fr 1fr; margin-bottom:0;">
+        <div>
+          <label for="f-meeting-time">Meeting time</label>
+          <input type="time" id="f-meeting-time">
+        </div>
+        <div>
+          <label for="f-duration">Duration (minutes)</label>
+          <input type="number" id="f-duration" min="10" max="180" step="5">
+        </div>
+      </div>
+      <label for="f-frequency">Run automatically</label>
+      <select id="f-frequency" style="width:100%; padding:11px 13px; border-radius:6px; border:1px solid var(--line); background:var(--cream); color:var(--ink); font-family:'Inter',sans-serif; font-size:0.92rem; margin-bottom:14px;">
+        <option value="manual">Manual — I'll click "Run today's draw" myself</option>
+        <option value="weekly">Weekly</option>
+        <option value="fortnightly">Fortnightly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+      <button class="btn btn-ghost" id="save-settings-btn" style="width:auto; padding-left:24px; padding-right:24px;">Save settings</button>
+      <div id="settings-msg" style="font-size:0.85rem; margin-top:10px; font-weight:500;"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:1.1rem; margin-bottom:6px;">Draw the tickets</h2>
+      <p class="tile-desc" style="margin-bottom:16px;">Shuffles everyone into tables of 2–4 and avoids repeating a pairing from the last few rounds.</p>
+      <button class="btn btn-primary" id="draw-btn" style="width:auto; padding-left:24px; padding-right:24px;">Run today's draw →</button>
+      <div id="draw-msg" style="font-size:0.85rem; margin-top:10px; font-weight:500;"></div>
+      <div id="draw-results" class="hidden" style="margin-top:18px;"></div>
+    </div>
   </div>
 </main>
 
@@ -262,9 +298,15 @@
     renderOrg(org, participants);
   }
 
+  let currentOrg = null;
+
   function renderOrg(org, participants) {
+    currentOrg = org;
     document.getElementById('org-name').textContent = org.name;
     document.getElementById('org-plan').textContent = org.plan_tier;
+    document.getElementById('f-meeting-time').value = org.meeting_time || '10:00';
+    document.getElementById('f-duration').value = org.meeting_duration_minutes || 30;
+    document.getElementById('f-frequency').value = org.match_frequency || 'manual';
 
     const capWrap = document.getElementById('cap-wrap');
     if (org.plan_tier === 'free') {
@@ -451,9 +493,125 @@
     window.location.href = portal_url;
   }
 
+  async function saveSettings() {
+    const settingsMsg = document.getElementById('settings-msg');
+    const meeting_time = document.getElementById('f-meeting-time').value;
+    const meeting_duration_minutes = parseInt(document.getElementById('f-duration').value, 10);
+    const match_frequency = document.getElementById('f-frequency').value;
+
+    if (!meeting_time || !meeting_duration_minutes) {
+      settingsMsg.style.color = 'var(--berry-text)';
+      settingsMsg.textContent = 'Set a meeting time and duration first.';
+      return;
+    }
+
+    settingsMsg.style.color = 'var(--ink-soft)';
+    settingsMsg.textContent = 'Saving…';
+
+    const res = await fetch(`${API_BASE}/organizations/${orgId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({ meeting_time, meeting_duration_minutes, match_frequency })
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      settingsMsg.style.color = 'var(--berry-text)';
+      settingsMsg.textContent = body.error || 'Could not save settings — try again.';
+      return;
+    }
+
+    currentOrg = await res.json();
+    settingsMsg.style.color = 'var(--sage-text)';
+    settingsMsg.textContent = match_frequency === 'manual'
+      ? 'Saved — you\'ll run each draw yourself.'
+      : `Saved — a new draw will run automatically ${match_frequency}.`;
+  }
+
+  async function sendInvite(groupId, btn, statusEl) {
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    const res = await fetch(`${API_BASE}/groups/${groupId}/invite`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    if (!res.ok) {
+      btn.disabled = false;
+      btn.textContent = 'Send invites →';
+      statusEl.style.color = 'var(--berry-text)';
+      statusEl.textContent = 'Could not send invites — try again.';
+      return;
+    }
+    const emailStatus = res.headers.get('X-Email-Status') || '';
+    btn.textContent = 'Sent ✓';
+    statusEl.style.color = 'var(--sage-text)';
+    statusEl.textContent = emailStatus.includes('failed')
+      ? 'Calendar invite ready, but some emails failed to send.'
+      : 'Calendar invites emailed to the table.';
+  }
+
+  async function runDraw() {
+    const drawMsg = document.getElementById('draw-msg');
+    const drawResults = document.getElementById('draw-results');
+    drawResults.classList.add('hidden');
+    drawResults.innerHTML = '';
+
+    drawMsg.style.color = 'var(--ink-soft)';
+    drawMsg.textContent = 'Shuffling the tables…';
+
+    const res = await fetch(`${API_BASE}/organizations/${orgId}/rounds`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({})
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      drawMsg.style.color = 'var(--berry-text)';
+      drawMsg.textContent = body.error || 'Could not run the draw — try again.';
+      return;
+    }
+
+    const round = await res.json();
+    drawMsg.style.color = 'var(--sage-text)';
+    drawMsg.textContent = `Drawn — ${round.groups.length} table${round.groups.length === 1 ? '' : 's'} for ${round.participant_count} people.`;
+
+    const canSendInvites = currentOrg && currentOrg.plan_tier !== 'free';
+    for (const groupId of round.groups) {
+      const groupRes = await fetch(`${API_BASE}/groups/${groupId}`);
+      if (!groupRes.ok) continue;
+      const group = await groupRes.json();
+
+      const card = document.createElement('div');
+      card.className = 'draw-group';
+      const names = group.participants.map((p) => p.name).join(', ');
+      const when = new Date(group.meeting_time);
+      card.innerHTML = `
+        <div class="draw-group-head">
+          <span>Table of ${group.participants.length}</span>
+          <span class="draw-group-when">${when.toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</span>
+        </div>
+        <div class="draw-group-names">${names}</div>
+        ${canSendInvites
+          ? '<button class="btn btn-ghost draw-invite-btn" style="width:auto; margin-top:10px; padding:8px 16px; font-size:0.85rem;">Send invites →</button><div class="draw-invite-status" style="font-size:0.8rem; margin-top:6px;"></div>'
+          : '<div class="draw-invite-status" style="font-size:0.8rem; margin-top:6px; color:var(--ink-soft);">Upgrade to Plus to email calendar invites automatically.</div>'}
+      `;
+      drawResults.appendChild(card);
+
+      if (canSendInvites) {
+        const inviteBtn = card.querySelector('.draw-invite-btn');
+        const statusEl = card.querySelector('.draw-invite-status');
+        inviteBtn.addEventListener('click', () => sendInvite(groupId, inviteBtn, statusEl));
+      }
+    }
+    drawResults.classList.remove('hidden');
+  }
+
   document.getElementById('load-btn').addEventListener('click', loadOrg);
   document.getElementById('add-btn').addEventListener('click', addPerson);
   document.getElementById('import-btn').addEventListener('click', importRoster);
+  document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+  document.getElementById('draw-btn').addEventListener('click', runDraw);
   document.getElementById('paywall-close').addEventListener('click', () => paywall.classList.add('hidden'));
   document.getElementById('proactive-upgrade').addEventListener('click', () => paywall.classList.remove('hidden'));
   document.getElementById('manage-billing').addEventListener('click', openBillingPortal);
