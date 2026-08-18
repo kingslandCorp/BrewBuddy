@@ -66,6 +66,12 @@
   nav.links a:hover{ color:var(--espresso); }
   nav.links a.btn-primary, nav.links a.btn-primary:hover{ color:var(--cream); }
   nav.links a.btn-ghost, nav.links a.btn-ghost:hover{ color:var(--espresso); }
+  .nav-toggle{
+    display:none; align-items:center; justify-content:center;
+    width:38px; height:38px; border-radius:8px; border:1px solid var(--line);
+    background:transparent; color:var(--espresso); cursor:pointer;
+  }
+  .nav-toggle svg{ width:20px; height:20px; }
   .btn{
     display:inline-flex; align-items:center; gap:8px;
     padding:11px 20px; border-radius:999px;
@@ -240,7 +246,17 @@
     .hero h1{ font-size:2.3rem; }
     .stubs{ grid-template-columns:1fr; }
     .pricing-grid{ grid-template-columns:1fr; }
-    nav.links{ display:none; }
+    .nav-toggle{ display:flex; }
+    nav.links{
+      display:none; position:absolute; top:100%; left:0; right:0;
+      flex-direction:column; align-items:stretch; gap:2px;
+      background:var(--cream); border-bottom:1px solid var(--line);
+      padding:10px 20px 18px; box-shadow:0 12px 24px -12px rgba(43,27,20,0.25);
+    }
+    nav.links.open{ display:flex; }
+    nav.links a{ padding:12px 4px; border-bottom:1px solid var(--line); }
+    nav.links a:last-of-type{ border-bottom:none; }
+    nav.links a.btn{ margin-top:10px; justify-content:center; }
     .final-cta{ margin:0 16px; padding:44px 24px; }
   }
   @media (prefers-reduced-motion: reduce){
@@ -253,7 +269,10 @@
 <header class="nav">
   <div class="nav-inner">
     <a href="#" class="logo"><img class="logo-mark" src="assets/logo-full.png" alt="">Brew Buddies</a>
-    <nav class="links">
+    <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-links">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <nav class="links" id="nav-links">
       <a href="#who">Who it's for</a>
       <a href="#how">How it draws</a>
       <a href="#pricing">Pricing</a>
@@ -485,6 +504,29 @@
 
 <script>
   document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Mobile nav: hamburger toggles the dropdown, closes on link click or outside tap.
+  const navToggle = document.getElementById('nav-toggle');
+  const navLinks = document.getElementById('nav-links');
+  const setNavOpen = (open) => {
+    navLinks.classList.toggle('open', open);
+    navToggle.setAttribute('aria-expanded', String(open));
+    navToggle.innerHTML = open
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';
+  };
+  navToggle.addEventListener('click', () => setNavOpen(!navLinks.classList.contains('open')));
+  navLinks.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setNavOpen(false)));
+  document.addEventListener('click', (e) => {
+    // Use composedPath, not e.target/contains: setNavOpen replaces navToggle's
+    // innerHTML mid-click (swapping the hamburger/X icon), which detaches the
+    // clicked node from the tree before this handler runs. composedPath()
+    // captures the original path at dispatch time, before that mutation.
+    const path = e.composedPath();
+    if (navLinks.classList.contains('open') && !path.includes(navLinks) && !path.includes(navToggle)) {
+      setNavOpen(false);
+    }
+  });
 
   // Pricing section: monthly / yearly toggle (Plus, Community, Corporate).
   const API_BASE_PRICING = 'https://brew-buddies-api.p-g-davis.workers.dev/v1';
