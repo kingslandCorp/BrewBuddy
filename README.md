@@ -80,6 +80,14 @@ response shape lives in `docs/api-design.md`.
   `RESEND_API_KEY` secret (`wrangler secret put RESEND_API_KEY`) and a
   verified sending domain in Resend; the response's `X-Email-Status` header
   reports per-participant send results.
+- **Video-call link on the invite** (Community/Corporate tiers, as advertised
+  on the pricing page) — generating the `.ics` for a Community or Corporate
+  org auto-creates a no-signup Daily.co room (`lib/videoCall.ts`) scoped to
+  the meeting window (joinable 15 min early, expires 1hr after), and drops
+  the link into the `.ics` (`URL`/`LOCATION`) and the invite email. Requires
+  a `DAILY_API_KEY` secret (`wrangler secret put DAILY_API_KEY`); without it,
+  invites still generate normally, just without a call link — same
+  fail-open pattern as the Resend integration.
 
 ## Pushing this to GitHub
 

@@ -1,7 +1,10 @@
 import { json, errorResponse } from '../lib/db';
 import { generateIcs } from '../lib/ics';
 import { sendInviteEmail } from '../lib/email';
+import { createCallRoom } from '../lib/videoCall';
 import type { Env } from './organizations';
+
+const VIDEO_CALL_TIERS = new Set(['community', 'corporate']);
 
 interface GroupRow {
   id: string;
@@ -70,12 +73,25 @@ export async function generateInvite(groupId: string, env: Env): Promise<Respons
   const meetingTimeUtc = new Date(data.group.meeting_time);
   const participants = data.participants as { id: string; name: string; email: string }[];
 
+  let videoLink: string | null = null;
+  if (env.DAILY_API_KEY && VIDEO_CALL_TIERS.has(data.group.plan_tier)) {
+    const room = await createCallRoom(
+      env.DAILY_API_KEY,
+      data.group.id,
+      meetingTimeUtc,
+      data.group.duration_minutes
+    ).catch((err) => ({ error: String(err) }));
+    if ('url' in room) videoLink = room.url;
+    else console.error(`[video-call] room creation failed for ${data.group.id}: ${room.error}`);
+  }
+
   const ics = generateIcs({
     groupId: data.group.id,
     orgName: data.group.org_name,
     meetingTimeUtc,
     durationMinutes: data.group.duration_minutes,
     participants,
+    videoLink,
   });
 
   await env.DB.prepare(`UPDATE groups SET ics_generated = 1 WHERE id = ?`).bind(groupId).run();
@@ -95,7 +111,8 @@ export async function generateInvite(groupId: string, env: Env): Promise<Respons
           data.group.org_name,
           otherNames,
           meetingTimeUtc,
-          ics
+          ics,
+          videoLink
         ).catch((err) => ({ ok: false, error: String(err) }));
         if (!result.ok) console.error(`[invite-email] failed for ${p.email}: ${result.error}`);
         return `${p.email}:${result.ok ? 'sent' : 'failed(' + (result as any).error + ')'}`;

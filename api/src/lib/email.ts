@@ -17,8 +17,13 @@ export async function sendInviteEmail(
   orgName: string,
   otherNames: string,
   meetingTimeUtc: Date,
-  icsContent: string
+  icsContent: string,
+  videoLink?: string | null
 ): Promise<{ ok: boolean; error?: string }> {
+  const videoLine = videoLink
+    ? `<p>Meeting remotely? Join the call here: <a href="${videoLink}">${videoLink}</a></p>`
+    : '';
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -32,6 +37,7 @@ export async function sendInviteEmail(
       html: `<p>Hi ${participantName},</p>
 <p>You've been matched with <strong>${otherNames}</strong> for a Brew Buddies chat.</p>
 <p>Meeting time: ${meetingTimeUtc.toUTCString()}</p>
+${videoLine}
 <p>The calendar invite is attached — add it and you're set.</p>`,
       attachments: [
         {

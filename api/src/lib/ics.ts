@@ -49,6 +49,7 @@ export function generateIcs(input: IcsGroupInput): string {
     `DTEND:${toIcsDate(end)}`,
     `SUMMARY:${escapeText('Brew Buddies ☕ — Meet your table')}`,
     `DESCRIPTION:${escapeText(description)}`,
+    ...(input.videoLink ? [`URL:${input.videoLink}`, `LOCATION:${escapeText(input.videoLink)}`] : []),
     attendees,
     `ORGANIZER;CN=${escapeText(input.orgName + ' Brew Buddies')}:mailto:noreply@brew-buddies.com`,
     'STATUS:CONFIRMED',

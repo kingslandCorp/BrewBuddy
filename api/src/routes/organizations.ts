@@ -5,6 +5,7 @@ export interface Env {
   RESEND_API_KEY?: string;
   STRIPE_SECRET_KEY?: string;
   STRIPE_WEBHOOK_SECRET?: string;
+  DAILY_API_KEY?: string;
 }
 
 export async function createOrganization(request: Request, env: Env): Promise<Response> {
