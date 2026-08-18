@@ -35,6 +35,10 @@ export function determineGroupSize(participantCount: number, orgOverride?: numbe
  * satisfy "don't repeat the same pair within N rounds" for real-world
  * group sizes (dozens to low hundreds of people).
  */
+function pairKey(a: string, b: string): string {
+  return [a, b].sort().join('::');
+}
+
 function shuffleAvoidingRecentPairs(
   participants: Participant[],
   recentPairs: Set<string>
@@ -48,9 +52,12 @@ function shuffleAvoidingRecentPairs(
   }
 
   // Local repair pass: if two adjacent people in the shuffled order have
-  // met recently, try swapping one of them a short distance away.
-  const pairKey = (a: string, b: string) => [a, b].sort().join('::');
-
+  // met recently, try swapping one of them a short distance away. This is
+  // a cheap first pass, not the full fix — it only looks at neighbours in
+  // shuffle order, so it misses "diagonal" pairs that land in the same
+  // group of 3 or 4 without being adjacent (e.g. positions i and i+2).
+  // groupRepairPass(), run after chunking into actual groups below,
+  // catches those.
   for (let i = 0; i < pool.length - 1; i++) {
     if (recentPairs.has(pairKey(pool[i].id, pool[i + 1].id))) {
       for (let j = i + 2; j < pool.length; j++) {
@@ -63,6 +70,67 @@ function shuffleAvoidingRecentPairs(
   }
 
   return pool;
+}
+
+/** Does `memberId` conflict with anyone else currently in `groupIds`? */
+function conflictsWithGroup(memberId: string, groupIds: string[], recentPairs: Set<string>): boolean {
+  return groupIds.some((id) => id !== memberId && recentPairs.has(pairKey(memberId, id)));
+}
+
+/** First recent-pair conflict found within a single group, if any. */
+function findInternalConflict(groupIds: string[], recentPairs: Set<string>): [string, string] | null {
+  for (let i = 0; i < groupIds.length; i++) {
+    for (let j = i + 1; j < groupIds.length; j++) {
+      if (recentPairs.has(pairKey(groupIds[i], groupIds[j]))) return [groupIds[i], groupIds[j]];
+    }
+  }
+  return null;
+}
+
+/**
+ * Repairs conflicts the shuffle-order pass can't see: any pair within a
+ * *formed* group (not just shuffle-adjacent) that recently met. For each
+ * conflicting pair, tries to swap one member with someone from another
+ * group, but only if the swap is clean both ways — the incoming member
+ * can't conflict with anyone staying in this group, and the outgoing
+ * member can't conflict with anyone in the group they're moving to.
+ * Best-effort: if no clean swap exists (dense history + small pool), the
+ * conflict is left in place rather than looping forever.
+ */
+function groupRepairPass(groups: BuiltGroup[], recentPairs: Set<string>): void {
+  if (recentPairs.size === 0) return;
+
+  for (let pass = 0; pass < 2; pass++) {
+    for (const group of groups) {
+      let conflict = findInternalConflict(group.participantIds, recentPairs);
+      while (conflict) {
+        const [, outgoing] = conflict;
+        let swapped = false;
+
+        for (const other of groups) {
+          if (other === group) continue;
+          for (const candidateId of other.participantIds) {
+            const groupWithoutOutgoing = group.participantIds.filter((id) => id !== outgoing);
+            const otherWithoutCandidate = other.participantIds.filter((id) => id !== candidateId);
+            const candidateFitsHere = !conflictsWithGroup(candidateId, groupWithoutOutgoing, recentPairs);
+            const outgoingFitsThere = !conflictsWithGroup(outgoing, otherWithoutCandidate, recentPairs);
+            if (candidateFitsHere && outgoingFitsThere) {
+              const gi = group.participantIds.indexOf(outgoing);
+              const oi = other.participantIds.indexOf(candidateId);
+              group.participantIds[gi] = candidateId;
+              other.participantIds[oi] = outgoing;
+              swapped = true;
+              break;
+            }
+          }
+          if (swapped) break;
+        }
+
+        if (!swapped) break; // no clean swap available — leave this one
+        conflict = findInternalConflict(group.participantIds, recentPairs);
+      }
+    }
+  }
 }
 
 /**
@@ -106,6 +174,8 @@ export function buildGroups(
       prev.sizeReason = 'odd_remainder';
     }
   }
+
+  groupRepairPass(groups, recentPairs);
 
   return groups;
 }
