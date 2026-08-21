@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /manage.html
+
+Sitemap: https://www.brew-buddies.com/sitemap.xml
